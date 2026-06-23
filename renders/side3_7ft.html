@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foundry Pillar — Side 3 (Need Help?) at true 7ft scale</title>
+<style>
+  :root{
+    --green:#0d5b3e; --forest:#063d2a; --gold:#f2b417; --teal:#6cc5c0; --sage:#7fa653;
+    --paper:#f7f4ec; --ink:#0a261b;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#ece7dc;font-family:'Archivo','Archivo Narrow',system-ui,-apple-system,sans-serif;color:var(--ink);padding:28px 16px 48px;}
+  .wrap{max-width:760px;margin:0 auto;}
+  .intro-copy{font-size:14px;color:#45463c;line-height:1.55;margin:0 0 22px;}
+  .intro-copy b{color:var(--forest);}
+  .stage{display:flex;justify-content:center;gap:16px;align-items:stretch;}
+
+  /* Ruler */
+  .ruler{position:relative;width:34px;flex:0 0 auto;color:#8a8a7d;}
+  .ruler .line{position:absolute;left:17px;top:0;bottom:0;width:0;border-left:1px solid #c2bca c;border-left:1px solid #c2bcac;}
+  .ruler .tick{position:absolute;left:10px;width:12px;border-top:1px solid #c2bcac;}
+  .ruler .lab{position:absolute;left:0;transform:translateY(-50%);font-size:9px;white-space:nowrap;font-weight:700;}
+
+  /* Pillar face: true ratio 26in wide : 84in tall = 1 : 3.23 -> 230 x 743 */
+  .ply{position:relative;width:230px;flex:0 0 auto;border-radius:9px;overflow:hidden;
+    background:
+      repeating-linear-gradient(91deg, rgba(120,80,30,.05) 0 2px, transparent 2px 7px),
+      repeating-linear-gradient(89deg, rgba(150,100,40,.045) 0 1px, transparent 1px 15px),
+      linear-gradient(180deg,#e7c79a 0%,#e3c190 14%,#e8cd9c 30%,#dfba84 48%,#e6c794 66%,#e3c08c 82%,#e0bd88 100%);
+    box-shadow:0 18px 46px rgba(60,40,15,.34);
+    padding:12px 12px 13px;display:flex;flex-direction:column;}
+  .ply::before{content:'';position:absolute;inset:0;border-radius:9px;border:1px solid rgba(90,60,25,.25);pointer-events:none;z-index:30;}
+  .knot{position:absolute;border-radius:50%;z-index:1;background:radial-gradient(circle,rgba(120,78,32,.4),rgba(150,105,55,.1) 60%,transparent 72%);}
+  .mount{position:relative;z-index:5;border-radius:6px;box-shadow:0 5px 12px rgba(50,32,10,.32);}
+
+  /* header */
+  .hdr{background:var(--green);border-radius:6px;overflow:hidden;position:relative;}
+  .toprow,.lpat{display:flex;}
+  .toprow .tt{width:10px;height:10px;flex:0 0 auto;overflow:hidden;}
+  .toprow .tt svg,.lpat .lt svg{display:block;width:100%;height:100%;}
+  .hdr .band{padding:10px 11px 11px;text-align:center;}
+  .hdr .eyebrow{font-size:6.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--teal);}
+  .hdr h3{font-size:20px;line-height:.9;font-weight:900;letter-spacing:-.02em;text-transform:uppercase;color:#fff;margin:4px 0 0;}
+  .hdr h3 em{font-style:normal;color:var(--gold);}
+  .hdr .rule{margin:7px auto 0;width:40px;height:2px;border-radius:1px;background:var(--gold);}
+
+  /* intro */
+  .intro{background:var(--forest);border-radius:6px;padding:11px 11px;position:relative;overflow:hidden;}
+  .intro .gco{position:absolute;width:72px;height:72px;border-radius:50%;background:rgba(127,166,83,.14);top:-26px;right:-24px;z-index:0;}
+  .intro .lbl{position:relative;z-index:2;font-size:6.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--teal);}
+  .intro .big{position:relative;z-index:2;font-size:17px;font-weight:900;line-height:.95;text-transform:uppercase;letter-spacing:-.02em;color:#fff;margin:4px 0 0;}
+  .intro .big em{font-style:normal;color:var(--gold);}
+  .intro p{position:relative;z-index:2;font-size:8.5px;line-height:1.4;color:rgba(247,244,236,.92);margin:7px 0 0;}
+  .intro p b{color:var(--gold);}
+  .intro .where{position:relative;z-index:2;display:inline-flex;align-items:center;gap:6px;margin-top:9px;background:rgba(242,180,23,.14);border:1px solid rgba(242,180,23,.5);border-radius:5px;padding:4px 9px 4px 6px;}
+  .intro .where .apron{width:12px;height:14px;flex:0 0 auto;}
+  .intro .where span{font-size:7px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#fff;}
+
+  /* plaque row */
+  .scoutcap{font-size:6.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--forest);text-align:center;margin-bottom:9px;opacity:.8;}
+  .plaquerow{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+  .rowrail{position:absolute;top:-6px;left:5px;right:5px;height:3px;border-radius:2px;background:rgba(90,60,25,.32);z-index:4;}
+  .rowrail::before,.rowrail::after{content:'';position:absolute;top:-1.5px;width:6px;height:6px;border-radius:50%;border:1px solid rgba(90,60,25,.45);}
+  .rowrail::before{left:-2px;} .rowrail::after{right:-2px;}
+  .plaque{aspect-ratio:1/1;border-radius:5px;overflow:hidden;position:relative;box-shadow:0 3px 8px rgba(50,32,10,.34);background:var(--green);display:flex;flex-direction:column;}
+  .plaque .pat{position:absolute;inset:0;z-index:0;opacity:.24;}
+  .plaque .pat svg{width:100%;height:100%;display:block;}
+  .plaque .inner{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:8px 5px 6px;}
+  .plaque .photo{width:34px;height:34px;border-radius:4px;flex:0 0 auto;background:var(--forest);border:2px solid #fff;display:flex;align-items:center;justify-content:center;position:relative;}
+  .plaque .photo .ph-init{font-size:13px;font-weight:900;color:var(--teal);}
+  .plaque .photo .tape{position:absolute;top:-4px;left:50%;transform:translateX(-50%) rotate(-4deg);width:17px;height:7px;background:rgba(242,180,23,.6);}
+  .plaque .pname{font-size:9px;font-weight:900;line-height:.96;text-transform:uppercase;letter-spacing:-.01em;color:#fff;margin-top:6px;}
+  .plaque .ppill{display:inline-block;margin-top:4px;background:var(--gold);color:var(--forest);font-size:5.5px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;padding:1px 5px;border-radius:2px;}
+  .plaque .prole{font-size:6px;font-weight:700;color:var(--teal);margin-top:5px;line-height:1.2;}
+  .plaque .prole b{color:#fff;}
+  .empty{aspect-ratio:1/1;border-radius:5px;border:1.5px dashed rgba(90,60,25,.42);background:rgba(255,255,255,.05);position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .empty .ecleat{position:absolute;top:11px;left:11px;right:11px;height:3px;border-radius:2px;background:rgba(90,60,25,.34);}
+  .empty .eicon{width:18px;height:18px;border-radius:50%;border:1.5px dashed rgba(90,60,25,.5);display:flex;align-items:center;justify-content:center;color:rgba(90,60,25,.6);font-size:12px;font-weight:300;margin-top:7px;}
+  .empty .etxt{font-size:5.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:rgba(90,60,25,.62);text-align:center;margin-top:5px;}
+
+  /* trainings */
+  .train{background:var(--paper);border-radius:6px;padding:9px 10px;display:flex;align-items:center;gap:9px;}
+  .train .tinfo{flex:1;}
+  .train .tlbl{font-size:6px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--green);}
+  .train .tbig{font-size:12px;font-weight:900;line-height:.98;text-transform:uppercase;letter-spacing:-.01em;color:var(--forest);margin:2px 0 0;}
+  .train p{font-size:7px;line-height:1.32;color:#56564c;margin:5px 0 0;}
+  .train p b{color:var(--green);}
+  .train .qr{width:40px;height:40px;flex:0 0 auto;background:#fff;border:1.5px solid var(--gold);border-radius:3px;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);padding:2px;gap:1px;}
+  .train .qr i{background:var(--forest);border-radius:1px;} .train .qr i.o{background:transparent;}
+
+  /* gap */
+  .gap{position:relative;flex:1 1 auto;min-height:150px;display:flex;align-items:center;justify-content:center;}
+  .gap .gmark,.gap .gmark2{position:absolute;top:10px;bottom:10px;width:0;border-left:1px dashed rgba(90,60,25,.3);}
+  .gap .gmark{left:3px;} .gap .gmark2{right:3px;}
+  .gap .ghost{font-size:6px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:rgba(90,60,25,.34);transform:rotate(-90deg);white-space:nowrap;}
+
+  /* lower band */
+  .lowband{background:var(--forest);border-radius:6px;overflow:hidden;position:relative;margin-bottom:10px;}
+  .lpat{height:11px;background:var(--forest);}
+  .lpat .lt{width:11px;height:11px;flex:0 0 auto;overflow:hidden;}
+  .lowband .lin{padding:9px 10px 10px;text-align:center;}
+  .lowband .lwm{font-size:9px;font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:#fff;}
+  .lowband .lwm span{color:var(--gold);}
+  .lowband .lsoc{display:flex;gap:7px;justify-content:center;margin-top:7px;}
+  .lowband .lsoc i{width:17px;height:17px;border-radius:3px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:8px;font-weight:700;font-style:normal;}
+  .lowband .lhrs{font-size:6.5px;color:rgba(255,255,255,.72);line-height:1.55;margin-top:7px;}
+  .lowband .lhrs b{color:#fff;font-weight:800;}
+
+  /* footer */
+  .ftr{background:var(--forest);border-radius:6px;overflow:hidden;border-top:2px solid var(--gold);}
+  .ftr .fin{padding:8px 10px 9px;text-align:center;}
+  .ftr .fmeta{font-size:6.5px;color:rgba(255,255,255,.64);line-height:1.55;}
+
+  .legend{flex:0 0 auto;width:150px;align-self:center;font-size:11px;color:#5a5a50;line-height:1.65;}
+  .legend b{color:var(--forest);display:block;margin-bottom:6px;font-size:12px;}
+  .legend .z{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;}
+  .legend .dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto;margin-top:3px;}
+  .note{max-width:560px;margin:24px auto 0;font-size:12.5px;color:#6a6a5e;line-height:1.6;text-align:center;}
+  .gapmeasure{position:absolute;left:50%;transform:translateX(-50%);font-size:6px;font-weight:700;color:rgba(90,60,25,.45);letter-spacing:.08em;text-transform:uppercase;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="intro-copy"><b>Side 3 &middot; Need Help?</b> at true 7&prime; &times; 26&Prime; proportion. The Scout content lands at standing eye level (roughly 3.5&ndash;6&prime;); below &ldquo;Get trained&rdquo; there's an intentional stretch of bare plywood, then a lower evergreen band carrying socials and hours in the bottom zone you flagged as less critical to read up close, with the address footer anchoring the base.</p>
+
+  <div class="stage">
+
+    <div class="ruler">
+      <div class="line"></div>
+      <div class="tick" style="top:0"></div><div class="lab" style="top:0">7&prime;</div>
+      <div class="tick" style="top:14.3%"></div><div class="lab" style="top:14.3%">6&prime;</div>
+      <div class="tick" style="top:50%"></div><div class="lab" style="top:50%">3.5&prime;</div>
+      <div class="tick" style="top:85.7%"></div><div class="lab" style="top:85.7%">1&prime;</div>
+      <div class="tick" style="top:99.7%"></div><div class="lab" style="top:99.7%">0</div>
+    </div>
+
+    <div class="ply">
+      <div class="knot" style="width:28px;height:18px;top:30%;right:8%;"></div>
+      <div class="knot" style="width:16px;height:11px;top:60%;left:10%;"></div>
+
+      <!-- HEADER -->
+      <div class="mount" style="margin-bottom:10px;"><div class="hdr">
+        <div class="toprow" id="hdrpat"></div>
+        <div class="band">
+          <div class="eyebrow">Stuck? We've got you</div>
+          <h3>Need <em>Help?</em></h3>
+          <div class="rule"></div>
+        </div>
+      </div></div>
+
+      <!-- INTRO -->
+      <div class="mount" style="margin-bottom:10px;"><div class="intro">
+        <div class="gco"></div>
+        <div class="lbl">Start here</div>
+        <div class="big">Find a <em>Scout</em></div>
+        <p>Trained students who unlock tools and get you started on any machine. <b>No appointment</b> &mdash; just ask.</p>
+        <div class="where">
+          <svg class="apron" viewBox="0 0 15 17"><path d="M5.5 1.5 L7.5 3.5 L9.5 1.5" fill="none" stroke="#f2b417" stroke-width="1.3" stroke-linecap="round"/><path d="M5.5 1.5 C3 2.5 3 5 4 6 L3 14 C3 15.5 4 16 7.5 16 C11 16 12 15.5 12 14 L11 6 C12 5 12 2.5 9.5 1.5" fill="#f2b417" stroke="#c99513" stroke-width="0.6"/><line x1="4" y1="9" x2="11" y2="9" stroke="#c99513" stroke-width="0.6"/></svg>
+          <span>Look for a yellow apron</span>
+        </div>
+      </div></div>
+
+      <!-- PLAQUE ROW -->
+      <div style="margin-bottom:10px;">
+        <div class="scoutcap">On shift &middot; 8&times;8&Prime; plaques on a shared cleat</div>
+        <div class="plaquerow">
+          <div class="rowrail"></div>
+          <div class="plaque">
+            <div class="pat"><svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice"><rect width="100" height="100" fill="#0d5b3e"/><polygon points="0,0 50,0 0,50" fill="#063d2a"/><circle cx="78" cy="26" r="20" fill="#0a4e36"/><rect x="20" y="62" width="24" height="24" fill="#0a4e36"/></svg></div>
+            <div class="inner">
+              <div class="photo"><span class="tape"></span><span class="ph-init">AR</span></div>
+              <div class="pname">Avery R.</div>
+              <div class="ppill">Scout</div>
+              <div class="prole"><b>Woodshop</b></div>
+            </div>
+          </div>
+          <div class="plaque">
+            <div class="pat"><svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice"><rect width="100" height="100" fill="#0d5b3e"/><polygon points="100,0 50,0 100,50" fill="#063d2a"/><circle cx="24" cy="28" r="18" fill="#0a4e36"/><rect x="58" y="62" width="24" height="24" fill="#0a4e36"/></svg></div>
+            <div class="inner">
+              <div class="photo"><span class="tape"></span><span class="ph-init">JL</span></div>
+              <div class="pname">Jordan L.</div>
+              <div class="ppill">Scout</div>
+              <div class="prole"><b>Textiles</b></div>
+            </div>
+          </div>
+          <div class="empty">
+            <div class="ecleat"></div>
+            <div class="eicon">+</div>
+            <div class="etxt">Open</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRAININGS -->
+      <div class="mount"><div class="train">
+        <div class="tinfo">
+          <div class="tlbl">Use a machine?</div>
+          <div class="tbig">Get trained</div>
+          <p>Free weekly trainings. <b>Sign up online</b> &mdash; a Scout certifies you.</p>
+        </div>
+        <div class="qr"><i></i><i class="o"></i><i></i><i></i><i></i><i class="o"></i><i></i><i class="o"></i><i class="o"></i><i></i><i></i><i></i><i></i><i class="o"></i><i></i><i></i><i class="o"></i><i class="o"></i><i></i><i class="o"></i><i></i><i></i><i class="o"></i><i></i><i></i></div>
+      </div></div>
+
+      <!-- GAP -->
+      <div class="gap">
+        <div class="gmark"></div><div class="gmark2"></div>
+        <div class="gapmeasure" style="top:6px;">&darr; ~1.5&prime; bare plywood &darr;</div>
+        <div class="ghost">Breathing room</div>
+      </div>
+
+      <!-- LOWER EVERGREEN BAND -->
+      <div class="lowband">
+        <div class="lpat" id="lowpat"></div>
+        <div class="lin">
+          <div class="lwm">Weissman <span>Foundry</span></div>
+          <div class="lsoc"><i>IG</i><i>in</i><i>&commat;</i></div>
+          <div class="lhrs"><b>Mon&ndash;Fri</b> 10a&ndash;9p &middot; <b>Sat&ndash;Sun</b> 12&ndash;8p<br>&commat;weissmanfoundry</div>
+        </div>
+      </div>
+
+      <!-- FOOTER -->
+      <div class="ftr"><div class="fin">
+        <div class="fmeta">9 Map Hill Drive, Wellesley MA 02482 &middot; foundryinfo@babson.edu</div>
+      </div></div>
+
+    </div>
+
+    <div class="legend">
+      <b>Reading zones</b>
+      <div class="z"><span class="dot" style="background:#7fa653;"></span><div><b style="display:inline">Top (6&ndash;7&prime;):</b> header &mdash; visible across the room</div></div>
+      <div class="z"><span class="dot" style="background:#0d5b3e;"></span><div><b style="display:inline">Eye level (3.5&ndash;6&prime;):</b> Scout intro &amp; plaques &mdash; the stuff people walk up to read</div></div>
+      <div class="z"><span class="dot" style="background:#c9a23a;"></span><div><b style="display:inline">Bottom (0&ndash;2&prime;):</b> hours, socials, address &mdash; fine to be less readable up close</div></div>
+    </div>
+
+  </div>
+
+  <p class="note">True 7&prime;&times;26&Prime; proportion. Filling the gap is a choice, not a requirement &mdash; the bare plywood reads as intentional negative space. The lower band gives the otherwise-dead bottom foot a job: socials &amp; hours that don't need to be at eye level. Open this file and resize the window to sanity-check legibility at scale.</p>
+</div>
+
+<script>
+  // build the small square pattern tile strips programmatically (header + lower band)
+  const motifs = [
+    g => `<rect width="20" height="20" fill="#f2b417"/><polygon points="0,0 20,0 0,20" fill="#0d5b3e"/>`,
+    g => `<rect width="20" height="20" fill="#6cc5c0"/><circle cx="10" cy="10" r="6.5" fill="#063d2a"/>`,
+    g => `<rect width="20" height="20" fill="#063d2a"/><polygon points="20,0 20,20 0,20" fill="#f2b417"/>`,
+    g => `<rect width="20" height="20" fill="#7fa653"/><rect x="6" y="6" width="8" height="8" fill="#f2b417"/>`,
+    g => `<rect width="20" height="20" fill="#6cc5c0"/><polygon points="0,0 20,0 0,20" fill="#063d2a"/>`,
+    g => `<rect width="20" height="20" fill="#0d5b3e"/><circle cx="10" cy="10" r="6.5" fill="#f2b417"/>`,
+    g => `<rect width="20" height="20" fill="#f2b417"/><polygon points="0,0 20,0 20,20" fill="#7fa653"/>`,
+    g => `<rect width="20" height="20" fill="#063d2a"/><rect x="6" y="6" width="8" height="8" fill="#6cc5c0"/>`,
+    g => `<rect width="20" height="20" fill="#7fa653"/><polygon points="20,0 20,20 0,20" fill="#0d5b3e"/>`,
+    g => `<rect width="20" height="20" fill="#f2b417"/><circle cx="10" cy="10" r="6.5" fill="#6cc5c0"/>`,
+  ];
+  function buildStrip(el, n, cls){
+    let html = '';
+    for(let i=0;i<n;i++){
+      const m = motifs[i % motifs.length];
+      html += `<div class="${cls}"><svg viewBox="0 0 20 20" preserveAspectRatio="xMidYMid slice">${m()}</svg></div>`;
+    }
+    el.innerHTML = html;
+  }
+  buildStrip(document.getElementById('hdrpat'), 22, 'tt');
+  buildStrip(document.getElementById('lowpat'), 20, 'lt');
+</script>
+</body>
+</html>

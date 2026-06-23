@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foundry Info Pillar — all three sides, measured to the sign only</title>
+<style>
+  :root{
+    --green:#0d5b3e; --forest:#063d2a; --gold:#f2b417; --teal:#6cc5c0; --sage:#7fa653;
+    --paper:#f7f4ec; --ink:#0a261b;
+    /* SCALE: 1 inch = 8.38px  ->  84in sign = 704px tall, 26in wide = 218px */
+    --in: 8.38px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#ece7dc;font-family:'Archivo','Archivo Narrow',system-ui,-apple-system,sans-serif;color:var(--ink);padding:28px 16px 56px;}
+  .wrap{max-width:1140px;margin:0 auto;}
+  h1{font-size:20px;font-weight:900;letter-spacing:-.01em;color:var(--forest);margin:0 0 4px;text-transform:uppercase;}
+  .sub{font-size:13px;color:#6a6a5e;margin:0 0 12px;line-height:1.5;}
+  .scalechip{display:inline-block;font-size:11px;font-weight:700;color:var(--forest);background:#dfd8c8;border-radius:5px;padding:4px 10px;margin:0 0 24px;}
+
+  .titles{display:flex;justify-content:center;gap:18px;padding-left:64px;margin-bottom:8px;}
+  .titles .t{width:218px;flex:0 0 auto;text-align:center;}
+  .titles .t .ct{font-size:12px;font-weight:800;color:var(--forest);text-transform:uppercase;letter-spacing:.04em;}
+  .titles .t .cs{font-size:10.5px;color:#8a8a7d;}
+  /* spacer columns to align titles with ruler + measure rail widths */
+  .titles.with-rails{padding-left:0;}
+  .titles .spacer{width:46px;flex:0 0 auto;}
+  .titles .spacer.r{width:54px;}
+
+  .row{display:flex;justify-content:center;gap:18px;align-items:flex-start;}
+
+  /* LEFT RULER — height matches the pillar exactly (84in) */
+  .ruler{position:relative;width:46px;height:704px;flex:0 0 auto;color:#7a7a6e;}
+  .ruler .line{position:absolute;left:30px;top:0;bottom:0;width:0;border-left:1.5px solid #b5af9e;}
+  .ruler .tick{position:absolute;left:18px;width:13px;border-top:1px solid #b5af9e;}
+  .ruler .tick.major{left:13px;width:18px;border-top:1.5px solid #9a937f;}
+  .ruler .lab{position:absolute;left:0;transform:translateY(-50%);font-size:9px;white-space:nowrap;font-weight:700;}
+  .ruler .lab.minor{font-size:8px;font-weight:600;color:#a8a293;}
+
+  .col{width:218px;flex:0 0 auto;}
+  /* pillar — exactly 84in tall */
+  .ply{position:relative;width:218px;height:704px;border-radius:9px;overflow:hidden;
+    background:
+      repeating-linear-gradient(91deg, rgba(120,80,30,.05) 0 2px, transparent 2px 7px),
+      repeating-linear-gradient(89deg, rgba(150,100,40,.045) 0 1px, transparent 1px 15px),
+      linear-gradient(180deg,#e7c79a 0%,#e3c190 14%,#e8cd9c 30%,#dfba84 48%,#e6c794 66%,#e3c08c 82%,#e0bd88 100%);
+    box-shadow:0 18px 46px rgba(60,40,15,.34);
+    padding:10px 10px 11px;display:flex;flex-direction:column;}
+  .ply::before{content:'';position:absolute;inset:0;border-radius:9px;border:1px solid rgba(90,60,25,.25);pointer-events:none;z-index:30;}
+  .knot{position:absolute;border-radius:50%;z-index:1;background:radial-gradient(circle,rgba(120,78,32,.4),rgba(150,105,55,.1) 60%,transparent 72%);}
+  .mount{position:relative;z-index:5;border-radius:6px;box-shadow:0 5px 12px rgba(50,32,10,.32);}
+
+  /* RIGHT measurement rail — brackets for each zone, only on side 3 */
+  .measure{position:relative;width:54px;height:704px;flex:0 0 auto;}
+  .brk{position:absolute;left:6px;width:14px;border-left:1.5px solid #9a937f;}
+  .brk::before,.brk::after{content:'';position:absolute;left:-1px;width:14px;height:0;border-top:1.5px solid #9a937f;}
+  .brk::before{top:0;} .brk::after{bottom:0;}
+  .brk .v{position:absolute;left:18px;top:50%;transform:translateY(-50%);font-size:8.5px;font-weight:700;color:#6a6a5e;white-space:nowrap;line-height:1.15;}
+  .brk .v small{display:block;font-size:6.5px;color:#a8a293;font-weight:600;}
+
+  /* ---- shared header ---- */
+  .toprow{display:flex;}
+  .toprow .tt{width:9px;height:9px;flex:0 0 auto;overflow:hidden;}
+  .toprow .tt svg{display:block;width:100%;height:100%;}
+  .hdrgreen{background:var(--green);border-radius:6px;overflow:hidden;position:relative;}
+  .hdrgreen .band{padding:9px 10px 10px;text-align:center;position:relative;}
+  .hdrgreen .gco{position:absolute;width:60px;height:60px;border-radius:50%;background:rgba(127,166,83,.16);top:-22px;right:-18px;z-index:0;}
+  .hdrgreen .eyebrow{position:relative;z-index:2;font-size:6px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--teal);}
+  .hdrgreen h3{position:relative;z-index:2;font-size:18px;line-height:.9;font-weight:900;letter-spacing:-.02em;text-transform:uppercase;color:#fff;margin:3px 0 0;}
+  .hdrgreen h3 em{font-style:normal;color:var(--gold);}
+  .hdrgreen .rule{position:relative;z-index:2;margin:6px auto 0;width:36px;height:2px;border-radius:1px;background:var(--gold);}
+  .hdrgreen .wmwrap{position:relative;z-index:2;display:flex;justify-content:center;}
+  .hdrgreen .wmwrap svg{width:128px;height:auto;display:block;}
+
+  .gpanel{background:var(--green);color:var(--paper);position:relative;overflow:hidden;padding:10px 10px;border-radius:6px;}
+  .gpanel .gco{position:absolute;z-index:0;}
+  .gpanel .c1{width:80px;height:80px;border-radius:50%;background:rgba(127,166,83,.15);top:-24px;right:-26px;}
+  .gpanel .c2{width:40px;height:40px;background:rgba(6,61,42,.5);transform:rotate(45deg);bottom:-16px;left:-14px;}
+  .gpanel .lbl{position:relative;z-index:2;font-size:6px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--teal);}
+  .gpanel .big{position:relative;z-index:2;font-size:15px;font-weight:900;line-height:.95;text-transform:uppercase;letter-spacing:-.02em;color:#fff;margin:3px 0 0;}
+  .gpanel .big em{font-style:normal;color:var(--gold);}
+  .gpanel p{position:relative;z-index:2;font-size:7.5px;line-height:1.4;color:rgba(247,244,236,.92);margin:6px 0 0;}
+  .gpanel p b{color:var(--gold);}
+
+  .more{background:var(--paper);border-radius:6px;padding:9px 10px;}
+  .more p{font-size:7px;line-height:1.42;color:#33342c;margin:0;}
+  .more p b{color:var(--green);}
+  .more .free{display:inline-block;margin-top:6px;background:var(--gold);color:var(--forest);font-size:6px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:3px;}
+
+  .caps{background:var(--forest);border-radius:6px;padding:9px 9px;}
+  .ct2{font-size:6.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--teal);text-align:center;margin-bottom:7px;}
+  .capgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;}
+  .cap{display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .cap i{width:24px;height:24px;border-radius:5px;background:rgba(255,255,255,.07);border:1px solid rgba(242,180,23,.4);display:flex;align-items:center;justify-content:center;}
+  .cap i svg{width:13px;height:13px;}
+  .cap span{font-size:4.2px;letter-spacing:.005em;text-transform:uppercase;font-weight:700;color:rgba(247,244,236,.78);text-align:center;line-height:1.15;word-break:break-word;hyphens:auto;}
+
+  .flow{background:var(--paper);border-radius:6px;padding:9px 9px;}
+  .ft{font-size:6.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--green);text-align:center;margin-bottom:8px;}
+  .steps{display:flex;gap:4px;}
+  .step{flex:1;text-align:center;position:relative;}
+  .step .n{width:16px;height:16px;border-radius:50%;background:var(--gold);color:var(--forest);font-size:8px;font-weight:900;display:flex;align-items:center;justify-content:center;margin:0 auto 4px;}
+  .step h4{font-size:7px;font-weight:900;text-transform:uppercase;letter-spacing:-.01em;color:var(--forest);margin:0;line-height:1;}
+  .step p{font-size:5.5px;color:#56564c;line-height:1.2;margin:3px 0 0;}
+  .step .arr{position:absolute;top:7px;right:-4px;color:#c9a23a;font-size:10px;font-weight:900;}
+
+  .qrow{background:var(--green);border-radius:6px;padding:9px 10px;display:flex;align-items:center;gap:9px;position:relative;overflow:hidden;}
+  .qrow .qco{position:absolute;width:60px;height:60px;border-radius:50%;background:rgba(127,166,83,.13);top:-20px;right:-18px;z-index:0;}
+  .qr{flex:0 0 auto;background:#fff;border:1.5px solid var(--gold);border-radius:3px;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);padding:2px;gap:1px;position:relative;z-index:2;}
+  .qr.s{width:36px;height:36px;} .qr.m{width:40px;height:40px;}
+  .qr i{background:var(--forest);border-radius:1px;} .qr i.o{background:transparent;}
+  .qrow .qt{position:relative;z-index:2;font-size:7.5px;font-weight:700;color:#fff;line-height:1.35;}
+  .qrow .qt b{color:var(--gold);display:block;font-size:8.5px;margin-top:1px;}
+  .qrow .qt small{color:var(--teal);font-size:6px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+
+  .calwrap{position:relative;z-index:5;display:flex;justify-content:center;}
+  .holder{position:relative;width:108px;background:#fff;border-radius:3px;padding:6px 6px 8px;box-shadow:0 5px 12px rgba(50,32,10,.32), inset 0 0 0 1px rgba(0,0,0,.08);}
+  .holder::before,.holder::after{content:'';position:absolute;top:-3px;width:22px;height:6px;border-radius:2px;background:#cfcaba;z-index:6;}
+  .holder::before{left:16px;} .holder::after{right:16px;}
+  .sheet{aspect-ratio:8.5/11;display:flex;flex-direction:column;}
+  .sheet .sct{font-size:6.5px;font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:var(--green);text-align:center;margin:1px 0 1px;}
+  .sheet .csub{font-size:4.5px;letter-spacing:.04em;text-transform:uppercase;color:#a8a496;text-align:center;margin-bottom:3px;}
+  .gcal{flex:1;display:flex;flex-direction:column;gap:1px;}
+  .gcal .gday{flex:1;display:flex;gap:2px;align-items:stretch;}
+  .gcal .gd{flex:0 0 13px;font-size:4.5px;font-weight:800;color:#8a8a7d;text-transform:uppercase;display:flex;align-items:center;}
+  .gcal .gevs{flex:1;display:flex;flex-direction:column;gap:.5px;justify-content:center;}
+  .gcal .ev{font-size:4px;font-weight:700;line-height:1.1;border-radius:1px;padding:.5px 1.5px;color:#fff;overflow:hidden;white-space:nowrap;}
+  .ev.r{background:var(--gold);color:#5e4505;} .ev.t{background:var(--teal);color:#0c4a45;} .ev.s{background:var(--sage);color:#21380f;} .ev.g{background:var(--green);}
+  .gcal .gday + .gday{border-top:.5px solid #eee;}
+  .ckey{display:flex;gap:4px;justify-content:center;margin-top:3px;font-size:4px;color:#6a6a5e;}
+  .ckey i{width:5px;height:5px;border-radius:1px;display:inline-block;vertical-align:-1px;margin-right:1.5px;}
+
+  .wb{background:#fbfbf9;border-radius:5px;position:relative;box-shadow:inset 0 0 0 2px #cfcabd;aspect-ratio:24/18;padding:9px 9px 0;display:flex;flex-direction:column;}
+  .wb .tab{position:absolute;top:-6px;left:50%;transform:translateX(-50%);background:var(--forest);color:#fff;font-size:5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;padding:1.5px 7px;border-radius:0 0 3px 3px;z-index:8;}
+  .wb .dim{position:absolute;top:4px;right:6px;font-size:4.5px;font-weight:700;color:#bdb8a8;}
+  .wb .scrawl{font-size:9px;color:#2f6aa0;font-weight:600;line-height:1.3;font-family:'Bradley Hand','Segoe Print',cursive;}
+  .wb .scrawl small{display:block;font-size:7px;color:#cf5a3a;margin-top:4px;}
+  .wb .scrawl .gr{display:block;font-size:7px;color:#3f8a4a;margin-top:3px;}
+  .wb .tray{position:absolute;left:9px;right:9px;bottom:4px;height:3px;border-radius:2px;background:#e3ded0;}
+  .wb .marker{position:absolute;bottom:7px;width:15px;height:4px;border-radius:2px;}
+  .wb .marker.o{right:11px;background:#d85a30;} .wb .marker.g{right:30px;background:var(--green);} .wb .marker.b{right:49px;background:#3f7fb0;}
+
+  .info{background:var(--forest);border-radius:5px;padding:9px 9px;position:relative;overflow:hidden;}
+  .info .ih{position:relative;z-index:2;font-size:6px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--teal);margin-bottom:6px;text-align:center;}
+  .info .ir{display:flex;gap:6px;position:relative;z-index:2;}
+  .info .ir + .ir{margin-top:5px;}
+  .info .pill{flex:0 0 auto;font-size:5.5px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;padding:2px 5px;border-radius:3px;height:fit-content;}
+  .info .pill.gold{background:var(--gold);color:var(--forest);} .info .pill.teal{background:var(--teal);color:#06403b;}
+  .info p{font-size:6.5px;line-height:1.34;color:rgba(247,244,236,.92);margin:0;}
+  .info p b{color:var(--gold);}
+
+  .posters{display:grid;grid-template-columns:1fr 1fr;gap:7px;position:relative;z-index:5;}
+  .poster{aspect-ratio:11/17;border-radius:4px;box-shadow:0 3px 8px rgba(50,32,10,.34);overflow:hidden;position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:6px 6px 5px;}
+  .poster.p1{background:var(--forest);} .poster.p2{background:var(--teal);}
+  .poster .pdate{font-size:5.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin-top:5px;}
+  .poster.p2 .pdate{color:#06403b;}
+  .poster .pband{height:6px;border-radius:2px;background:var(--gold);width:60%;margin-top:3px;}
+  .poster.p2 .pband{background:var(--forest);}
+  .poster .ph{font-size:9px;font-weight:900;line-height:.95;text-transform:uppercase;color:#fff;}
+  .poster.p2 .ph{color:var(--forest);}
+  .poster .pq{width:11px;height:11px;border:1.5px solid var(--gold);border-radius:2px;align-self:flex-end;}
+  .poster.p2 .pq{border-color:var(--forest);}
+
+  .scoutcap{font-size:5.5px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--forest);text-align:center;margin-bottom:8px;opacity:.8;}
+  .sectionhdr{display:flex;align-items:center;gap:6px;background:var(--forest);border-radius:5px;padding:6px 9px;margin-bottom:11px;position:relative;}
+  .sectionhdr .dotlive{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 2px rgba(242,180,23,.28);flex:0 0 auto;}
+  .sectionhdr .sht{font-size:7.5px;font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:#fff;line-height:1;}
+  .sectionhdr .shsub{margin-left:auto;font-size:5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);}
+  .plaquerow{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+  .rowrail{position:absolute;top:-5px;left:4px;right:4px;height:3px;border-radius:2px;background:rgba(90,60,25,.32);z-index:4;}
+  .rowrail::before,.rowrail::after{content:'';position:absolute;top:-1.5px;width:5px;height:5px;border-radius:50%;border:1px solid rgba(90,60,25,.45);}
+  .rowrail::before{left:-2px;} .rowrail::after{right:-2px;}
+  .plaque{aspect-ratio:1/1;border-radius:4px;overflow:hidden;position:relative;box-shadow:0 3px 8px rgba(50,32,10,.34);background:var(--green);display:flex;flex-direction:column;}
+  .plaque .pat{position:absolute;inset:0;z-index:0;opacity:.24;}
+  .plaque .pat svg{width:100%;height:100%;display:block;}
+  .plaque .inner{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:6px 3px 5px;}
+  .plaque .photo{width:26px;height:26px;border-radius:4px;flex:0 0 auto;background:var(--forest);border:2px solid #fff;display:flex;align-items:center;justify-content:center;position:relative;}
+  .plaque .photo .ph-init{font-size:10px;font-weight:900;color:var(--teal);}
+  .plaque .photo .tape{position:absolute;top:-3px;left:50%;transform:translateX(-50%) rotate(-4deg);width:13px;height:6px;background:rgba(242,180,23,.6);}
+  .plaque .pname{font-size:7px;font-weight:900;line-height:.96;text-transform:uppercase;letter-spacing:-.01em;color:#fff;margin-top:5px;}
+  .plaque .ppill{display:inline-block;margin-top:3px;background:var(--gold);color:var(--forest);font-size:4.5px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;padding:1px 4px;border-radius:2px;}
+  .plaque .prole{font-size:5px;font-weight:700;color:var(--teal);margin-top:4px;line-height:1.2;}
+  .plaque .prole b{color:#fff;}
+  .empty{aspect-ratio:1/1;border-radius:4px;border:1.5px dashed rgba(90,60,25,.42);background:rgba(255,255,255,.05);position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .empty .ecleat{position:absolute;top:9px;left:9px;right:9px;height:3px;border-radius:2px;background:rgba(90,60,25,.34);}
+  .empty .eicon{width:15px;height:15px;border-radius:50%;border:1.5px dashed rgba(90,60,25,.5);display:flex;align-items:center;justify-content:center;color:rgba(90,60,25,.6);font-size:10px;font-weight:300;margin-top:6px;}
+  .empty .etxt{font-size:4.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:rgba(90,60,25,.62);text-align:center;margin-top:4px;}
+  .train{background:var(--paper);border-radius:6px;padding:9px 9px;display:flex;align-items:center;gap:8px;}
+  .train .tinfo{flex:1;}
+  .train .tlbl{font-size:5px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--green);}
+  .train .tbig{font-size:11px;font-weight:900;line-height:.98;text-transform:uppercase;letter-spacing:-.01em;color:var(--forest);margin:2px 0 0;}
+  .train p{font-size:6px;line-height:1.32;color:#56564c;margin:4px 0 0;}
+  .train p b{color:var(--green);}
+  .apron{width:9px;height:11px;flex:0 0 auto;}
+  .where{display:inline-flex;align-items:center;gap:5px;margin-top:7px;background:rgba(242,180,23,.14);border:1px solid rgba(242,180,23,.5);border-radius:4px;padding:3px 7px 3px 5px;position:relative;z-index:2;}
+  .where span{font-size:5.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#fff;}
+
+  .gap{position:relative;flex:1 1 auto;min-height:24px;display:flex;align-items:center;justify-content:center;}
+  .gap .ghost{font-size:5px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:rgba(90,60,25,.3);transform:rotate(-90deg);white-space:nowrap;}
+
+  .lowband{background:var(--forest);border-radius:6px;overflow:hidden;position:relative;margin-bottom:8px;}
+  .lpat{display:flex;height:9px;background:var(--forest);}
+  .lpat .lt{width:9px;height:9px;flex:0 0 auto;overflow:hidden;}
+  .lpat .lt svg{display:block;width:100%;height:100%;}
+  .lowband .lin{padding:8px 10px 9px;display:flex;align-items:center;gap:10px;}
+  .lowband .lleft{flex:1;min-width:0;text-align:left;}
+  .lowband .lright{flex:0 0 auto;display:flex;align-items:center;}
+  .lowband .lwm{font-size:7.5px;font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:#fff;}
+  .lowband .lwm span{color:var(--gold);}
+  .lowband .lwmmark{display:flex;justify-content:flex-end;}
+  .lowband .lwmmark svg{width:88px;height:auto;display:block;}
+  .lowband .lsoc{display:flex;gap:5px;justify-content:flex-start;}
+  .lowband .lsoc i{width:15px;height:15px;border-radius:3px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:7px;font-weight:700;font-style:normal;}
+  .lowband .lhrs{font-size:5.5px;color:rgba(255,255,255,.72);line-height:1.5;margin-top:5px;text-align:left;}
+  .lowband .lhrs b{color:#fff;font-weight:800;}
+  .lowband .ldiv{width:1px;align-self:stretch;background:rgba(255,255,255,.14);flex:0 0 auto;}
+
+  .ftr{background:var(--forest);border-radius:6px;overflow:hidden;border-top:2px solid var(--gold);}
+  .ftr .fin{padding:7px 9px 8px;text-align:center;}
+  .ftr .fmeta{font-size:5.5px;color:rgba(255,255,255,.64);line-height:1.5;}
+
+  .footer-note{max-width:760px;margin:26px auto 0;font-size:12.5px;color:#6a6a5e;line-height:1.6;text-align:center;}
+  .footer-note b{color:var(--forest);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Weissman Foundry &mdash; Info Pillar</h1>
+  <p class="sub">All three faces at true scale. The ruler and the bracket measurements describe the <b>sign only</b> &mdash; the 84&Prime; (7&prime;) tall &times; 26&Prime; wide plywood face &mdash; not the labels above it.</p>
+  <div class="scalechip">Scale: 1&Prime; = 8.38&nbsp;px &nbsp;&middot;&nbsp; sign = 26&Prime; W &times; 84&Prime; H</div>
+
+  <!-- column titles, aligned over the pillars (offset past the ruler) -->
+  <div class="titles">
+    <div class="t"><div class="ct">Side 1 &middot; The Foundry</div><div class="cs">Evergreen</div></div>
+    <div class="t"><div class="ct">Side 2 &middot; What's Happening</div><div class="cs">Live &mdash; weekly</div></div>
+    <div class="t"><div class="ct">Side 3 &middot; Need Help?</div><div class="cs">Scouts &amp; training</div></div>
+  </div>
+
+  <div class="row">
+
+    <!-- LEFT RULER — 0 to 84in, height = pillar height exactly -->
+    <div class="ruler">
+      <div class="line"></div>
+      <div class="tick major" style="top:0"></div><div class="lab" style="top:0">84&Prime; &middot; 7&prime;</div>
+      <div class="tick" style="top:14.29%"></div><div class="lab minor" style="top:14.29%">72&Prime;</div>
+      <div class="tick" style="top:28.57%"></div><div class="lab minor" style="top:28.57%">60&Prime;</div>
+      <div class="tick major" style="top:42.86%"></div><div class="lab" style="top:42.86%">48&Prime; &middot; 4&prime;</div>
+      <div class="tick" style="top:57.14%"></div><div class="lab minor" style="top:57.14%">36&Prime;</div>
+      <div class="tick" style="top:71.43%"></div><div class="lab minor" style="top:71.43%">24&Prime;</div>
+      <div class="tick" style="top:85.71%"></div><div class="lab minor" style="top:85.71%">12&Prime;</div>
+      <div class="tick major" style="top:99.8%"></div><div class="lab" style="top:99.8%">0</div>
+    </div>
+
+    <!-- ============ SIDE 1 ============ -->
+    <div class="col">
+      <div class="ply">
+        <div class="knot" style="width:26px;height:17px;top:40%;right:7%;"></div>
+        <div class="knot" style="width:15px;height:10px;top:66%;left:9%;"></div>
+        <div class="mount" style="margin-bottom:8px;"><div class="hdrgreen">
+          <div class="toprow s1top"></div>
+          <div class="band" style="padding-top:11px;padding-bottom:11px;">
+            <div class="gco"></div>
+            <div class="wmwrap" id="wm1"></div>
+            <div class="eyebrow" style="margin-top:9px;">An open-door prototyping hub</div>
+            <div class="rule"></div>
+          </div>
+        </div></div>
+        <div class="mount" style="margin-bottom:8px;"><div class="gpanel">
+          <div class="gco c1"></div><div class="gco c2"></div>
+          <div class="lbl">Where your ideas become reality</div>
+          <div class="big">Bring your<br><em>idea</em> to life</div>
+          <p>A prototyping hub where students, faculty &amp; staff from Babson, Olin &amp; Wellesley come together to design, build, and bring ideas to life. <b>You always had the spark.</b></p>
+        </div></div>
+        <div class="mount" style="margin-bottom:8px;"><div class="more">
+          <p>10,000 sq ft of <b>woodshop, 3D printing &amp; electronics, textiles, digital fabrication, and a kitchen</b> &mdash; plus it's the home of The Generator, Babson's AI lab. <span class="free">All free to the BOW community</span></p>
+        </div></div>
+        <div class="mount" style="margin-bottom:8px;"><div class="caps">
+          <div class="ct2">Go beyond the expected</div>
+          <div class="capgrid" id="caps1"></div>
+        </div></div>
+        <div class="mount" style="margin-bottom:8px;"><div class="flow">
+          <div class="ft">From concept to product</div>
+          <div class="steps">
+            <div class="step"><div class="n">1</div><h4>Bring it</h4><p>Any idea</p><span class="arr">&rsaquo;</span></div>
+            <div class="step"><div class="n">2</div><h4>Learn it</h4><p>Get trained</p><span class="arr">&rsaquo;</span></div>
+            <div class="step"><div class="n">3</div><h4>Make it</h4><p>Build it</p></div>
+          </div>
+        </div></div>
+        <div class="mount"><div class="qrow">
+          <div class="qco"></div>
+          <div class="qr m"><i></i><i class="o"></i><i></i><i></i><i></i><i class="o"></i><i></i><i class="o"></i><i class="o"></i><i></i><i></i><i></i><i></i><i class="o"></i><i></i><i></i><i class="o"></i><i class="o"></i><i></i><i class="o"></i><i></i><i></i><i class="o"></i><i></i><i></i></div>
+          <div class="qt"><small>New here?</small><b>Get started</b>babson.edu/foundry</div>
+        </div></div>
+        <div class="gap"><div class="ghost">Breathing room</div></div>
+        <div class="lowband">
+          <div class="lpat low1"></div>
+          <div class="lin">
+            <div class="lleft">
+              <div class="lsoc"><i>IG</i><i>in</i><i>&commat;</i></div>
+              <div class="lhrs"><b>Mon&ndash;Fri</b> 10a&ndash;9p &middot; <b>Sat&ndash;Sun</b> 12&ndash;8p</div>
+            </div>
+            <div class="ldiv"></div>
+            <div class="lright"><div class="lwmmark" id="fwm1"></div></div>
+          </div>
+        </div>
+        <div class="ftr"><div class="fin"><div class="fmeta">9 Map Hill Drive, Wellesley MA 02482 &middot; foundryinfo@babson.edu</div></div></div>
+      </div>
+    </div>
+
+    <!-- ============ SIDE 2 ============ -->
+    <div class="col">
+      <div class="ply">
+        <div class="knot" style="width:24px;height:16px;top:52%;left:7%;"></div>
+        <div class="mount" style="margin-bottom:8px;"><div class="hdrgreen">
+          <div class="toprow s2top"></div>
+          <div class="band">
+            <div class="gco"></div>
+            <div class="eyebrow">This week in the space</div>
+            <h3>What's<br><em>Happening</em></h3>
+            <div class="rule"></div>
+          </div>
+        </div></div>
+        <div class="calwrap" style="margin-bottom:8px;"><div class="holder">
+          <div class="sheet">
+            <div class="sct">Week of Mar 3</div>
+            <div class="csub">all spaces</div>
+            <div class="gcal">
+              <div class="gday"><div class="gd">Mon</div><div class="gevs"><span class="ev r">9a Wood hold</span><span class="ev t">2p FME</span></div></div>
+              <div class="gday"><div class="gd">Tue</div><div class="gevs"><span class="ev t">11a Laser 101</span></div></div>
+              <div class="gday"><div class="gd">Wed</div><div class="gevs"><span class="ev r">9a Reserved</span><span class="ev r">3p Reserved</span></div></div>
+              <div class="gday"><div class="gd">Thu</div><div class="gevs"><span class="ev g">Laser closed</span></div></div>
+              <div class="gday"><div class="gd">Fri</div><div class="gevs"><span class="ev s">5p Screen print</span></div></div>
+              <div class="gday"><div class="gd">Sat</div><div class="gevs"><span class="ev s">12p Open Build</span></div></div>
+              <div class="gday"><div class="gd">Sun</div><div class="gevs"><span class="ev t">1p Textiles</span></div></div>
+            </div>
+            <div class="ckey"><span><i style="background:#f2b417"></i>Reserved</span><span><i style="background:#6cc5c0"></i>Class</span><span><i style="background:#7fa653"></i>Event</span></div>
+          </div>
+        </div></div>
+        <div class="mount" style="margin-bottom:8px;box-shadow:0 6px 14px rgba(50,32,10,.3);"><div class="wb">
+          <span class="tab">Whiteboard</span><span class="dim">24&times;18&Prime;</span>
+          <div class="scrawl">Welcome, BOW Fashion crew! &#9733;
+            <small>Laser closed Thurs &mdash; maint.</small>
+            <span class="gr">Free coffee in the kitchen &rarr;</span>
+          </div>
+          <span class="marker b"></span><span class="marker g"></span><span class="marker o"></span>
+          <span class="tray"></span>
+        </div></div>
+        <div class="mount" style="margin-bottom:8px;"><div class="info">
+          <div class="ih">Using the space</div>
+          <div class="ir"><span class="pill gold">Reserve</span><p>Book ahead at <b>weissmanfoundry.org</b> &mdash; studios, classrooms, collab areas.</p></div>
+          <div class="ir"><span class="pill teal">Drop in</span><p>Most spaces welcome drop-ins when open &amp; unbooked. Just show up.</p></div>
+        </div></div>
+        <div class="posters" style="margin-bottom:8px;">
+          <div class="poster p1"><div><div class="pdate">Fri Mar 7</div><div class="pband"></div></div><div class="ph">Screen<br>Printing</div><div class="pq"></div></div>
+          <div class="poster p2"><div><div class="pdate">Sat Mar 8</div><div class="pband"></div></div><div class="ph">Open<br>Build</div><div class="pq"></div></div>
+        </div>
+        <div class="gap"><div class="ghost">Breathing room</div></div>
+        <div class="lowband">
+          <div class="lpat low2"></div>
+          <div class="lin">
+            <div class="lleft">
+              <div class="lsoc"><i>IG</i><i>in</i><i>&commat;</i></div>
+              <div class="lhrs"><b>Mon&ndash;Fri</b> 10a&ndash;9p &middot; <b>Sat&ndash;Sun</b> 12&ndash;8p</div>
+            </div>
+            <div class="ldiv"></div>
+            <div class="lright"><div class="lwm">Weissman<br><span>Foundry</span></div></div>
+          </div>
+        </div>
+        <div class="ftr"><div class="fin"><div class="fmeta">9 Map Hill Drive, Wellesley MA 02482 &middot; foundryinfo@babson.edu</div></div></div>
+      </div>
+    </div>
+
+    <!-- ============ SIDE 3 ============ -->
+    <div class="col">
+      <div class="ply">
+        <div class="knot" style="width:26px;height:17px;top:34%;right:8%;"></div>
+        <div class="knot" style="width:15px;height:10px;top:64%;left:9%;"></div>
+        <div class="mount" style="margin-bottom:8px;"><div class="hdrgreen">
+          <div class="toprow s3top"></div>
+          <div class="band">
+            <div class="gco"></div>
+            <div class="eyebrow">Stuck? We've got you</div>
+            <h3>Need<br><em>Help?</em></h3>
+            <div class="rule"></div>
+          </div>
+        </div></div>
+        <div class="mount" style="margin-bottom:8px;"><div class="gpanel">
+          <div class="gco c1"></div><div class="gco c2"></div>
+          <div class="lbl">Start here</div>
+          <div class="big">Find a <em>Scout</em></div>
+          <p>Trained students who unlock tools and get you started on any machine. <b>No appointment</b> &mdash; just ask.</p>
+          <div class="where">
+            <svg class="apron" viewBox="0 0 15 17"><path d="M5.5 1.5 L7.5 3.5 L9.5 1.5" fill="none" stroke="#f2b417" stroke-width="1.3" stroke-linecap="round"/><path d="M5.5 1.5 C3 2.5 3 5 4 6 L3 14 C3 15.5 4 16 7.5 16 C11 16 12 15.5 12 14 L11 6 C12 5 12 2.5 9.5 1.5" fill="#f2b417" stroke="#c99513" stroke-width="0.6"/><line x1="4" y1="9" x2="11" y2="9" stroke="#c99513" stroke-width="0.6"/></svg>
+            <span>Look for a yellow apron</span>
+          </div>
+        </div></div>
+        <div style="margin-bottom:8px;">
+          <div class="sectionhdr">
+            <span class="dotlive"></span>
+            <span class="sht">Scouts on shift today</span>
+            <span class="shsub">8&times;8&Prime; &middot; shared cleat</span>
+          </div>
+          <div class="plaquerow">
+            <div class="rowrail"></div>
+            <div class="plaque">
+              <div class="pat"><svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice"><rect width="100" height="100" fill="#0d5b3e"/><polygon points="0,0 50,0 0,50" fill="#063d2a"/><circle cx="78" cy="26" r="20" fill="#0a4e36"/><rect x="20" y="62" width="24" height="24" fill="#0a4e36"/></svg></div>
+              <div class="inner"><div class="photo"><span class="tape"></span><span class="ph-init">AR</span></div><div class="pname">Avery R.</div><div class="ppill">Scout</div><div class="prole"><b>Woodshop</b></div></div>
+            </div>
+            <div class="plaque">
+              <div class="pat"><svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice"><rect width="100" height="100" fill="#0d5b3e"/><polygon points="100,0 50,0 100,50" fill="#063d2a"/><circle cx="24" cy="28" r="18" fill="#0a4e36"/><rect x="58" y="62" width="24" height="24" fill="#0a4e36"/></svg></div>
+              <div class="inner"><div class="photo"><span class="tape"></span><span class="ph-init">JL</span></div><div class="pname">Jordan L.</div><div class="ppill">Scout</div><div class="prole"><b>Textiles</b></div></div>
+            </div>
+            <div class="empty"><div class="ecleat"></div><div class="eicon">+</div><div class="etxt">Open</div></div>
+          </div>
+        </div>
+        <div class="mount"><div class="train">
+          <div class="tinfo">
+            <div class="tlbl">Use a machine?</div>
+            <div class="tbig">Get trained</div>
+            <p>Free weekly trainings. <b>Sign up online</b> &mdash; a Scout certifies you.</p>
+          </div>
+          <div class="qr s"><i></i><i class="o"></i><i></i><i></i><i></i><i class="o"></i><i></i><i class="o"></i><i class="o"></i><i></i><i></i><i></i><i></i><i class="o"></i><i></i><i></i><i class="o"></i><i class="o"></i><i></i><i class="o"></i><i></i><i></i><i class="o"></i><i></i><i></i></div>
+        </div></div>
+        <div class="gap"><div class="ghost">Breathing room</div></div>
+        <div class="lowband">
+          <div class="lpat low3"></div>
+          <div class="lin">
+            <div class="lleft">
+              <div class="lsoc"><i>IG</i><i>in</i><i>&commat;</i></div>
+              <div class="lhrs"><b>Mon&ndash;Fri</b> 10a&ndash;9p &middot; <b>Sat&ndash;Sun</b> 12&ndash;8p</div>
+            </div>
+            <div class="ldiv"></div>
+            <div class="lright"><div class="lwmmark" id="fwm3"></div></div>
+          </div>
+        </div>
+        <div class="ftr"><div class="fin"><div class="fmeta">9 Map Hill Drive, Wellesley MA 02482 &middot; foundryinfo@babson.edu</div></div></div>
+      </div>
+    </div>
+
+    <!-- RIGHT measurement rail (keyed to Side 3 zones; representative for all) -->
+    <div class="measure" id="measure3"></div>
+
+  </div>
+
+  <p class="footer-note"><b>Reading the measurements:</b> the left ruler runs 0&ndash;84&Prime; against the plywood face only. The right brackets call out the working zones &mdash; header, content field, the deliberate gap, and the evergreen footer band. These are the live numbers to lock before cutting cleats; everything else (copy, hours, names, QR, pattern) is placeholder.</p>
+</div>
+
+<script>
+  const motifs = [
+    () => `<rect width="20" height="20" fill="#f2b417"/><polygon points="0,0 20,0 0,20" fill="#0d5b3e"/>`,
+    () => `<rect width="20" height="20" fill="#6cc5c0"/><circle cx="10" cy="10" r="6.5" fill="#063d2a"/>`,
+    () => `<rect width="20" height="20" fill="#063d2a"/><polygon points="20,0 20,20 0,20" fill="#f2b417"/>`,
+    () => `<rect width="20" height="20" fill="#7fa653"/><rect x="6" y="6" width="8" height="8" fill="#f2b417"/>`,
+    () => `<rect width="20" height="20" fill="#6cc5c0"/><polygon points="0,0 20,0 0,20" fill="#063d2a"/>`,
+    () => `<rect width="20" height="20" fill="#0d5b3e"/><circle cx="10" cy="10" r="6.5" fill="#f2b417"/>`,
+    () => `<rect width="20" height="20" fill="#f2b417"/><polygon points="0,0 20,0 20,20" fill="#7fa653"/>`,
+    () => `<rect width="20" height="20" fill="#063d2a"/><rect x="6" y="6" width="8" height="8" fill="#6cc5c0"/>`,
+    () => `<rect width="20" height="20" fill="#7fa653"/><polygon points="20,0 20,20 0,20" fill="#0d5b3e"/>`,
+    () => `<rect width="20" height="20" fill="#f2b417"/><circle cx="10" cy="10" r="6.5" fill="#6cc5c0"/>`,
+  ];
+  function strip(sel, n, cls, off){
+    document.querySelectorAll(sel).forEach(el=>{
+      let h=''; for(let i=0;i<n;i++){ h+=`<div class="${cls}"><svg viewBox="0 0 20 20" preserveAspectRatio="xMidYMid slice">${motifs[(i+off)%motifs.length]()}</svg></div>`; }
+      el.innerHTML=h;
+    });
+  }
+  strip('.s1top',24,'tt',0); strip('.s2top',24,'tt',3); strip('.s3top',24,'tt',6);
+  strip('.low1',24,'lt',1); strip('.low2',24,'lt',4); strip('.low3',24,'lt',7);
+
+  const icons = [
+    {l:'Woodshop',d:'<rect stroke="#f2b417" stroke-width="2.1" x="5" y="9" width="14" height="8" rx="1"/><path stroke="#f2b417" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" d="M7 9V4h10v5M8 17v3h8v-3"/>'},
+    {l:'Digital Fabrication',d:'<rect stroke="#f2b417" stroke-width="2.1" x="4" y="3" width="16" height="5" rx="1"/><path stroke="#f2b417" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" d="M9 8l-1 4h8l-1-4M12 12v5"/><path stroke="#f2b417" stroke-width="2.1" stroke-linecap="round" d="M10.5 19.5h3"/>'},
+    {l:'Fashion & Textiles',d:'<path stroke="#f2b417" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" d="M9 3l3 3 3-3M9 3L5 7l2.5 2.5L9 8v13h6V8l1.5 1.5L19 7l-4-4"/>'},
+    {l:'3D Printing & Electronics',d:'<path stroke="#f2b417" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path stroke="#f2b417" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>'},
+    {l:'Kitchen',d:'<path stroke="#f2b417" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" d="M7 14a4 4 0 01-1-7.9 4 4 0 017.7-1.2A4 4 0 0117 14M7 14h10v4a1 1 0 01-1 1H8a1 1 0 01-1-1v-4z"/>'},
+  ];
+  const cw=document.getElementById('caps1');
+  if(cw){ cw.innerHTML=icons.map(o=>`<div class="cap"><i><svg viewBox="0 0 24 24" fill="none">${o.d}</svg></i><span>${o.l}</span></div>`).join(''); }
+
+  // white wordmark on green band
+  const wm=document.getElementById('wm1');
+  if(wm){ wm.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 702.73 202.26"><path fill="none" stroke="#FFFFFF" stroke-miterlimit="10" stroke-width="3" d="M49.04 133.2V3.13h67.57v19.56H70.6v33.88h34.24v18.84H70.6v57.79z"/><g fill="none" stroke="#FFFFFF" stroke-miterlimit="10" stroke-width="3"><path d="M123.5 68.16c0-43.11 12.5-66.66 42.93-66.66s43.11 23.55 43.11 66.66-13.22 66.66-43.11 66.66-42.93-23.91-42.93-66.66Zm64.13 0c0-33.88-7.06-48-21.19-48s-21.01 14.13-21.01 48 7.61 48.19 21.01 48.19 21.19-13.04 21.19-48.19Z"/><path d="M284.73 3.13h21.19v88.58c0 28.08-12.32 42.93-40.4 42.93s-39.13-14.85-39.13-42.93V3.13h21.56v91.48c0 15.04 5.62 21.56 17.93 21.56s18.84-6.52 18.84-21.56V3.13Z"/><path d="m389.07 133.2-41.48-89.85h-.36v89.85h-19.2V3.13h24.82l35.69 78.98h.36V3.13h19.56V133.2h-19.38Z"/><path d="M431.1 133.2V3.13h29.89c35.87 0 52.35 18.12 52.35 63.58 0 42.75-14.49 66.48-52.72 66.48h-29.53Zm31.16-19.93c20.47 0 29.17-14.49 29.17-46.38s-9.6-43.84-28.62-43.84h-9.78v90.21h9.24Z"/><path d="m587.62 133.2-18.66-53.62h-16.49v53.62h-21.56V3.13h34.42c27.9 0 41.3 10.69 41.3 36.05 0 16.49-7.07 26.63-18.3 31.7l22.64 62.32H587.6Zm-22.83-71.92c9.78 0 19.93-3.44 19.93-20.11 0-18.3-10.33-19.38-20.11-19.38h-12.14v39.49z"/><path d="M646.31 133.2V80.67L614.25 3.13h22.83l19.75 52.9h.36l20.83-52.9h22.46l-32.61 77.53v52.53h-21.56Z"/></g><path fill="#FFFFFF" d="m26.89 117.42-18.18 3.05v.08l18.18 2.9v4.46l-26.7 5.35v-4.42l18.3-3.12v-.07l-18.3-3.06v-4.35l18.26-3.01v-.07L.19 112.03v-4.35l26.7 5.32z"/><g fill="#FFFFFF"><path d="M27.22 101.27c0 4.65-3.09 6.92-10.11 6.92-6.25 0-9.93-2.42-9.93-6.99 0-5.02 3.98-6.77 8.92-6.77.56 0 1.19 0 1.9.04v9.93c4.05-.15 5.95-1 5.95-3.31 0-1.79-1.23-2.75-3.24-3.31l.67-3.31c4.09 1.04 5.84 3.31 5.84 6.8m-12.09 3.09v-6.14c-2.86 0-4.8.89-4.8 2.97 0 1.93 1.71 2.9 4.8 3.16Z"/><path d="M4.39 91.42H0v-4.09h4.39zm22.5-.08H7.55V87.4h19.34z"/><path d="M12.68 75.68c-1.75.63-2.38 1.49-2.38 2.83s.78 2.08 1.9 2.08c3.53 0 2.86-8.52 9.52-8.52 3.53 0 5.5 2.38 5.5 6.25s-1.56 5.47-5.02 6.4l-.89-3.24c1.93-.67 2.83-1.52 2.83-3.2 0-1.45-.78-2.42-2.08-2.42-4.09 0-3.31 8.4-9.67 8.4-3.12 0-5.21-2.19-5.21-5.73s1.6-5.17 4.65-5.99l.85 3.12Z"/><path d="M12.68 61.51c-1.75.63-2.38 1.49-2.38 2.83s.78 2.08 1.9 2.08c3.53 0 2.86-8.52 9.52-8.52 3.53 0 5.5 2.38 5.5 6.25s-1.56 5.47-5.02 6.4l-.89-3.24c1.93-.67 2.83-1.52 2.83-3.2 0-1.45-.78-2.42-2.08-2.42-4.09 0-3.31 8.4-9.67 8.4-3.12 0-5.21-2.19-5.21-5.73s1.6-5.17 4.65-5.99l.85 3.12Z"/><path d="M26.89 37.6H13.76c-2.16 0-2.83.78-2.83 1.82s.63 2.01 1.82 2.97h14.13v3.94H13.9c-2.04 0-2.97.45-2.97 1.75 0 1.04.78 2.12 1.97 3.05h13.98v3.94H7.55v-3.83h2.27c-1.67-1.45-2.64-3.05-2.64-4.87 0-1.93.97-3.05 2.64-3.57-1.75-1.56-2.64-3.05-2.64-4.98 0-3.09 2.34-4.13 5.95-4.13h13.76v3.9Z"/><path d="m26.89 21.16-2.05.22c1.56 1.52 2.38 3.24 2.38 5.24 0 2.71-1.86 4.35-5.09 4.35-2.19 0-3.87-.78-5.09-2.45-1.15-1.49-1.97-3.94-2.86-6.95-2.53-.22-3.76.33-3.76 2.31 0 1.64.97 2.57 2.68 3.12l-.78 3.2c-3.12-.86-5.13-2.75-5.13-6.54 0-4.2 2.01-5.95 6.1-5.95h9.97l3.64-.3v3.76Zm-9.93.52c.6 2.12 1.08 3.31 1.79 4.16.63.78 1.64 1.08 2.79 1.08 1.45 0 2.38-.63 2.38-1.9s-.71-2.49-1.86-3.35h-5.09Z"/><path d="M26.89 4.72H13.91c-2.12 0-2.97.63-2.97 2.01 0 1.04.56 2.04 1.93 3.24h14.02v3.94H7.55v-3.83h2.31c-1.78-1.6-2.68-3.09-2.68-5.06 0-1.64.63-2.83 1.75-3.42 1-.63 2.42-.78 4.54-.78h13.42v3.91Z"/></g><g fill="#FFFFFF"><path d="M312.25 177.78c2.7-1.54 4.53-3.64 5.04-6.58.29-1.72.24-3.55.09-5.33-.33-4.55-2.83-7.7-6.97-8.86-1.2-.33-2.46-.56-3.71-.58-4.15-.07-8.32-.04-12.48-.05-.11 0-.22.07-.22.07v45.05h8.57c2.03-.02 4.09.04 6.11-.2 4.47-.53 7.61-2.88 8.93-7.26.43-1.43.69-2.97.76-4.47.29-5.04-.91-9.38-6.11-11.79Zm-10.56-14.98c2.46.14 5.24-.71 6.81 1.88 1.47 2.39 1.81 5.11.42 7.66-1.58 2.88-4.42 2.63-7.23 2.46v-12.01Zm8.47 28.5c-.47 2.1-1.78 3.46-3.97 3.68-1.49.14-2.97.02-4.51.02v-13.68c1.99-.04 3.99-.25 5.87.62 1.52.71 2.3 1.96 2.66 3.51.43 1.96.4 3.91-.05 5.85"/><path d="M462.83 156.44v45.07c-2.14 0-4.24 0-6.32-.04-.24 0-.56-.36-.67-.63-2.25-6.34-4.47-12.68-6.7-19.04-.89-2.54-1.78-5.05-2.68-7.59-.07-.2-.14-.42-.22-.62-.05 0-.11.02-.14.02v27.84h-6.99v-45.07c2.28 0 4.55-.02 6.81.04.24 0 .54.47.65.8 2.14 5.74 4.24 11.5 6.34 17.28.82 2.19 1.63 4.4 2.45 6.61.09.25.2.47.45.69v-25.36h7.03Z"/><path d="M376.05 185.25c-.34-1.97-1.11-3.8-2.57-5.18-.94-.89-2.07-1.59-3.12-2.39.13-.09.34-.24.58-.38 2.36-1.5 3.95-3.62 4.31-6.39.24-1.79.2-3.7-.04-5.51-.47-3.93-2.39-6.96-6.36-8.17-1.68-.53-3.51-.74-5.27-.8-3.61-.13-7.19-.04-10.78-.04-.29 0-.58.02-.89.04v45.09h8.44c2.08-.04 4.2.04 6.27-.22 4.4-.51 7.46-2.84 8.86-7.12.94-2.92 1.09-5.91.56-8.93Zm-16.34-22.45c2.39.13 4.93-.6 6.74 1.7 1.38 1.74 1.67 5.89.56 7.77-1.68 2.88-4.46 2.7-7.3 2.54zm8.35 28.53c-.4 2.32-1.97 3.55-4.31 3.71-1.3.07-2.63 0-4.04 0v-13.82c1.38.05 2.74.02 4.06.22 2.64.38 4.22 1.9 4.47 4.57.16 1.76.13 3.59-.18 5.33Z"/><path d="M432.57 166.08c-.2-4.86-3.19-8.68-7.77-9.76-1.78-.43-3.68-.53-5.51-.45-6.05.25-10.24 4.46-10.42 10.49-.13 4.2-.04 8.41-.04 12.63h.04c0 4.31-.16 8.64.04 12.97.2 4.17 2.21 7.37 6.16 9.13 1.7.74 3.5 1.01 5.34 1.03 2.77.04 5.43-.4 7.75-2.03 3.21-2.26 4.42-5.53 4.44-9.29.04-5.31.02-10.63.02-15.94 0-2.92.07-5.85-.05-8.77Zm-7.68 24.42c-.02.85-.14 1.72-.34 2.55-.29 1.14-1.09 1.9-2.23 2.08-.98.14-2.03.18-3.03.02-1.47-.24-2.23-1.29-2.48-2.7-.13-.72-.2-1.49-.2-2.23-.02-7.55-.02-15.09 0-22.64.02-.92.13-1.85.36-2.74.33-1.27 1.23-2.01 2.54-2.21.38-.05.78-.13 1.16-.13 2.7-.04 4.13 1.2 4.18 3.89.07 4.18.02 8.37.02 12.54h.02c0 3.86.04 7.7 0 11.56Z"/><path d="M537.12 166.19c-.05-3.53-1.56-6.54-4.64-8.53-2.81-1.81-5.94-2.08-9.17-1.78-5.65.54-9.6 4.47-9.84 10.11-.2 4.31-.04 8.64-.04 12.97h-.07v11.99c0 .4.05.78.09 1.16.36 3.62 1.88 6.58 5.13 8.44 2.63 1.5 5.51 1.7 8.44 1.49 5.76-.42 10-4.57 10.11-10.27.14-8.51.13-17.07-.02-25.58Zm-7.64 9.09v3.68h-.02c0 4.08.02 8.17 0 12.25 0 .65-.2 1.3-.36 1.94-.07.31-.24.62-.43.87-1.27 1.54-2.99 1.47-4.69 1.18-1.5-.25-2.32-1.29-2.57-2.74-.11-.62-.18-1.25-.18-1.87v-23.55c.05-3.64 1.87-5.07 5.67-4.35 1.61.31 2.54 1.68 2.59 3.82.05 2.92.04 5.83.04 8.77h-.04Z"/><path d="M642.5 178.65v22.88c-1.16 0-2.32.04-3.46 0-.18 0-.4-.31-.51-.53-.4-.85-.76-1.74-1.16-2.7-.34.36-.62.71-.92 1.01-2.72 2.84-6.09 3.39-9.75 2.52s-5.96-3.3-7.01-6.85c-.36-1.25-.58-2.57-.58-3.88-.05-8.08-.04-16.16-.02-24.26 0-5.13 2.81-9.24 7.36-10.47 4.58-1.27 8.93-.82 12.46 2.77 2.12 2.17 2.99 4.93 3.19 7.88.09 1.3 0 2.61 0 3.97h-7.3c-.14-1.49-.24-2.93-.43-4.38-.09-.67-.31-1.34-.56-1.96-.65-1.52-1.97-2.21-3.8-2.08-1.5.13-2.43.91-2.86 2.54-.16.69-.27 1.41-.27 2.12q-.03 11.76 0 23.55c0 .4.02.83.09 1.23.42 2.74 2.23 3.89 4.91 3.19 1.01-.27 1.78-.89 2.12-1.88.25-.69.4-1.43.53-2.16.09-.47.07-.96.07-1.43v-5.04h-4.82v-6.03h12.72l.02-.02Z"/><path d="M339.11 156.42h-9.69c-2.79 15.02-5.56 30.02-8.35 45.05h7.54c.47-3.32.94-6.61 1.41-9.96 2.55 0 5.04.04 7.52-.02.76-.02 1.01.22 1.11.98.36 2.99.8 5.96 1.23 9h7.59c-2.79-15.05-5.56-30.04-8.35-45.05Zm-7.97 28.35c1.01-6.39 2.01-12.72 3.01-19.02h.16c1 6.3 1.99 12.61 3.01 19.04h-6.18z"/><path d="M506.98 195.5c-1.32 3.44-3.82 5.54-7.41 6.38-2.55.58-5.11.49-7.63-.22-4.62-1.32-7.55-5.27-7.57-10.34-.05-8.21-.05-16.41 0-24.62.04-6.2 4.37-10.56 10.56-10.87 1.94-.11 3.84-.04 5.67.63 3.99 1.45 6.14 4.46 6.87 8.46.38 2.1.31 4.26.45 6.47h-8.03v-1.45c-.09-1.39-.02-2.83-.31-4.18-.53-2.63-2.68-3.75-5.24-2.88-1.52.51-2.05 1.74-2.25 3.17-.09.67-.11 1.36-.11 2.05v21.85c0 .89.04 1.79.24 2.66.45 2.16 1.85 3.01 4.47 2.83 1.83-.13 2.97-1.27 3.1-3.3.11-1.85.07-3.7.09-5.54v-1.12h7.92c-.13 3.39.42 6.78-.83 10.04Z"/><path d="M403.82 192.98c-.72 4.67-4.18 8.1-9.08 8.88-2.01.33-4.04.43-6.05-.11-4.62-1.23-7.07-4.51-8.19-8.95-.27-1.01-.34-2.08-.53-3.19 2.57-.38 4.98-.72 7.34-1.05.33 1.29.51 2.54.92 3.7.89 2.45 2.75 3.5 5.11 3.03 1.87-.36 3.15-1.87 3.21-3.77.09-2.07-.58-3.93-1.97-5.4-1.61-1.72-3.37-3.3-5.14-4.86-2.21-1.92-4.47-3.79-6.14-6.23-2.46-3.59-3.08-7.54-2.05-11.68 1.03-4.18 3.97-6.47 8.08-7.28 1.92-.4 3.88-.53 5.8-.11 4.69 1.03 7.05 4.26 8.15 8.66.16.65.24 1.32.36 2.08-2.48.29-4.87.56-7.3.83-.2-.8-.34-1.56-.6-2.28-.63-1.72-1.94-2.66-3.64-2.68-2.23-.02-3.62 1.3-3.86 3.73-.2 1.97.51 3.7 1.83 5.07 1.63 1.72 3.46 3.28 5.18 4.93 1.87 1.81 3.84 3.51 5.53 5.49 2.72 3.21 3.7 7.01 3.04 11.2Z"/><path d="M601.78 163.16v11.56h9.96v6.81h-9.96v13.14h12.02v6.79h-19.89v-45.02h19.91v6.72z"/><path d="M656.7 163.18v11.52h9.88v6.81h-9.88v13.16h11.94v6.81H648.8v-45.04h19.88v6.74z"/><path d="M563.19 194.72v6.72h-19.93v-45.02h7.72v38.3z"/><path d="M588.66 194.68v6.76h-19.95v-45.02h7.76v38.26z"/></g><path fill="#FFFFFF" d="M280.3 193.99c-4.22 2.87-9.34 3.75-14.62 3.75-11.69 0-18.73-7.08-18.73-17.65 0-11.29 6.89-20.42 20.07-20.42 10.46 0 17.29 5.44 17.29 15.34 0 7.9-4.96 13.6-11.26 13.6-1.81 0-3.74-.46-4.48-2.82h-.11c-1.71 1.8-3.9 2.82-6.35 2.82-4.7 0-6.62-3.69-6.62-7.65 0-5.8 4.22-12.93 10.84-12.93 2.67 0 4.64.77 5.87 3.03l1.17-2.16h2.99l-4 13.03c-.37 1.13-.69 3.34 1.39 3.34 4.16 0 6.94-4.41 6.94-10.26 0-8.11-5.28-12.16-13.66-12.16-11.58 0-16.44 7.65-16.44 17.24 0 8.62 5.71 14.47 15.11 14.47 4.96 0 9.29-1.08 12.65-3.49l1.98 2.92Zm-9.87-18.74c0-2.36-1.23-4-4-4-4.8 0-7.05 5.64-7.05 9.6 0 2.98 1.28 4.46 3.42 4.46 4.96 0 7.63-6.26 7.63-10.06"/></svg>`; }
+
+  // footer wordmarks (white) on sides 1 and 3
+  const fwmSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 702.73 202.26"><path fill="none" stroke="#FFFFFF" stroke-miterlimit="10" stroke-width="3" d="M49.04 133.2V3.13h67.57v19.56H70.6v33.88h34.24v18.84H70.6v57.79z"/><g fill="none" stroke="#FFFFFF" stroke-miterlimit="10" stroke-width="3"><path d="M123.5 68.16c0-43.11 12.5-66.66 42.93-66.66s43.11 23.55 43.11 66.66-13.22 66.66-43.11 66.66-42.93-23.91-42.93-66.66Zm64.13 0c0-33.88-7.06-48-21.19-48s-21.01 14.13-21.01 48 7.61 48.19 21.01 48.19 21.19-13.04 21.19-48.19Z"/><path d="M284.73 3.13h21.19v88.58c0 28.08-12.32 42.93-40.4 42.93s-39.13-14.85-39.13-42.93V3.13h21.56v91.48c0 15.04 5.62 21.56 17.93 21.56s18.84-6.52 18.84-21.56V3.13Z"/><path d="m389.07 133.2-41.48-89.85h-.36v89.85h-19.2V3.13h24.82l35.69 78.98h.36V3.13h19.56V133.2h-19.38Z"/><path d="M431.1 133.2V3.13h29.89c35.87 0 52.35 18.12 52.35 63.58 0 42.75-14.49 66.48-52.72 66.48h-29.53Zm31.16-19.93c20.47 0 29.17-14.49 29.17-46.38s-9.6-43.84-28.62-43.84h-9.78v90.21h9.24Z"/><path d="m587.62 133.2-18.66-53.62h-16.49v53.62h-21.56V3.13h34.42c27.9 0 41.3 10.69 41.3 36.05 0 16.49-7.07 26.63-18.3 31.7l22.64 62.32H587.6Zm-22.83-71.92c9.78 0 19.93-3.44 19.93-20.11 0-18.3-10.33-19.38-20.11-19.38h-12.14v39.49z"/><path d="M646.31 133.2V80.67L614.25 3.13h22.83l19.75 52.9h.36l20.83-52.9h22.46l-32.61 77.53v52.53h-21.56Z"/></g><path fill="#FFFFFF" d="m26.89 117.42-18.18 3.05v.08l18.18 2.9v4.46l-26.7 5.35v-4.42l18.3-3.12v-.07l-18.3-3.06v-4.35l18.26-3.01v-.07L.19 112.03v-4.35l26.7 5.32z"/><g fill="#FFFFFF"><path d="M27.22 101.27c0 4.65-3.09 6.92-10.11 6.92-6.25 0-9.93-2.42-9.93-6.99 0-5.02 3.98-6.77 8.92-6.77.56 0 1.19 0 1.9.04v9.93c4.05-.15 5.95-1 5.95-3.31 0-1.79-1.23-2.75-3.24-3.31l.67-3.31c4.09 1.04 5.84 3.31 5.84 6.8m-12.09 3.09v-6.14c-2.86 0-4.8.89-4.8 2.97 0 1.93 1.71 2.9 4.8 3.16Z"/><path d="M4.39 91.42H0v-4.09h4.39zm22.5-.08H7.55V87.4h19.34z"/><path d="M12.68 75.68c-1.75.63-2.38 1.49-2.38 2.83s.78 2.08 1.9 2.08c3.53 0 2.86-8.52 9.52-8.52 3.53 0 5.5 2.38 5.5 6.25s-1.56 5.47-5.02 6.4l-.89-3.24c1.93-.67 2.83-1.52 2.83-3.2 0-1.45-.78-2.42-2.08-2.42-4.09 0-3.31 8.4-9.67 8.4-3.12 0-5.21-2.19-5.21-5.73s1.6-5.17 4.65-5.99l.85 3.12Z"/><path d="M12.68 61.51c-1.75.63-2.38 1.49-2.38 2.83s.78 2.08 1.9 2.08c3.53 0 2.86-8.52 9.52-8.52 3.53 0 5.5 2.38 5.5 6.25s-1.56 5.47-5.02 6.4l-.89-3.24c1.93-.67 2.83-1.52 2.83-3.2 0-1.45-.78-2.42-2.08-2.42-4.09 0-3.31 8.4-9.67 8.4-3.12 0-5.21-2.19-5.21-5.73s1.6-5.17 4.65-5.99l.85 3.12Z"/><path d="M26.89 37.6H13.76c-2.16 0-2.83.78-2.83 1.82s.63 2.01 1.82 2.97h14.13v3.94H13.9c-2.04 0-2.97.45-2.97 1.75 0 1.04.78 2.12 1.97 3.05h13.98v3.94H7.55v-3.83h2.27c-1.67-1.45-2.64-3.05-2.64-4.87 0-1.93.97-3.05 2.64-3.57-1.75-1.56-2.64-3.05-2.64-4.98 0-3.09 2.34-4.13 5.95-4.13h13.76v3.9Z"/><path d="m26.89 21.16-2.05.22c1.56 1.52 2.38 3.24 2.38 5.24 0 2.71-1.86 4.35-5.09 4.35-2.19 0-3.87-.78-5.09-2.45-1.15-1.49-1.97-3.94-2.86-6.95-2.53-.22-3.76.33-3.76 2.31 0 1.64.97 2.57 2.68 3.12l-.78 3.2c-3.12-.86-5.13-2.75-5.13-6.54 0-4.2 2.01-5.95 6.1-5.95h9.97l3.64-.3v3.76Zm-9.93.52c.6 2.12 1.08 3.31 1.79 4.16.63.78 1.64 1.08 2.79 1.08 1.45 0 2.38-.63 2.38-1.9s-.71-2.49-1.86-3.35h-5.09Z"/><path d="M26.89 4.72H13.91c-2.12 0-2.97.63-2.97 2.01 0 1.04.56 2.04 1.93 3.24h14.02v3.94H7.55v-3.83h2.31c-1.78-1.6-2.68-3.09-2.68-5.06 0-1.64.63-2.83 1.75-3.42 1-.63 2.42-.78 4.54-.78h13.42v3.91Z"/></g><g fill="#FFFFFF"><path d="M312.25 177.78c2.7-1.54 4.53-3.64 5.04-6.58.29-1.72.24-3.55.09-5.33-.33-4.55-2.83-7.7-6.97-8.86-1.2-.33-2.46-.56-3.71-.58-4.15-.07-8.32-.04-12.48-.05-.11 0-.22.07-.22.07v45.05h8.57c2.03-.02 4.09.04 6.11-.2 4.47-.53 7.61-2.88 8.93-7.26.43-1.43.69-2.97.76-4.47.29-5.04-.91-9.38-6.11-11.79Zm-10.56-14.98c2.46.14 5.24-.71 6.81 1.88 1.47 2.39 1.81 5.11.42 7.66-1.58 2.88-4.42 2.63-7.23 2.46v-12.01Zm8.47 28.5c-.47 2.1-1.78 3.46-3.97 3.68-1.49.14-2.97.02-4.51.02v-13.68c1.99-.04 3.99-.25 5.87.62 1.52.71 2.3 1.96 2.66 3.51.43 1.96.4 3.91-.05 5.85"/><path d="M462.83 156.44v45.07c-2.14 0-4.24 0-6.32-.04-.24 0-.56-.36-.67-.63-2.25-6.34-4.47-12.68-6.7-19.04-.89-2.54-1.78-5.05-2.68-7.59-.07-.2-.14-.42-.22-.62-.05 0-.11.02-.14.02v27.84h-6.99v-45.07c2.28 0 4.55-.02 6.81.04.24 0 .54.47.65.8 2.14 5.74 4.24 11.5 6.34 17.28.82 2.19 1.63 4.4 2.45 6.61.09.25.2.47.45.69v-25.36h7.03Z"/><path d="M376.05 185.25c-.34-1.97-1.11-3.8-2.57-5.18-.94-.89-2.07-1.59-3.12-2.39.13-.09.34-.24.58-.38 2.36-1.5 3.95-3.62 4.31-6.39.24-1.79.2-3.7-.04-5.51-.47-3.93-2.39-6.96-6.36-8.17-1.68-.53-3.51-.74-5.27-.8-3.61-.13-7.19-.04-10.78-.04-.29 0-.58.02-.89.04v45.09h8.44c2.08-.04 4.2.04 6.27-.22 4.4-.51 7.46-2.84 8.86-7.12.94-2.92 1.09-5.91.56-8.93Zm-16.34-22.45c2.39.13 4.93-.6 6.74 1.7 1.38 1.74 1.67 5.89.56 7.77-1.68 2.88-4.46 2.7-7.3 2.54zm8.35 28.53c-.4 2.32-1.97 3.55-4.31 3.71-1.3.07-2.63 0-4.04 0v-13.82c1.38.05 2.74.02 4.06.22 2.64.38 4.22 1.9 4.47 4.57.16 1.76.13 3.59-.18 5.33Z"/><path d="M432.57 166.08c-.2-4.86-3.19-8.68-7.77-9.76-1.78-.43-3.68-.53-5.51-.45-6.05.25-10.24 4.46-10.42 10.49-.13 4.2-.04 8.41-.04 12.63h.04c0 4.31-.16 8.64.04 12.97.2 4.17 2.21 7.37 6.16 9.13 1.7.74 3.5 1.01 5.34 1.03 2.77.04 5.43-.4 7.75-2.03 3.21-2.26 4.42-5.53 4.44-9.29.04-5.31.02-10.63.02-15.94 0-2.92.07-5.85-.05-8.77Zm-7.68 24.42c-.02.85-.14 1.72-.34 2.55-.29 1.14-1.09 1.9-2.23 2.08-.98.14-2.03.18-3.03.02-1.47-.24-2.23-1.29-2.48-2.7-.13-.72-.2-1.49-.2-2.23-.02-7.55-.02-15.09 0-22.64.02-.92.13-1.85.36-2.74.33-1.27 1.23-2.01 2.54-2.21.38-.05.78-.13 1.16-.13 2.7-.04 4.13 1.2 4.18 3.89.07 4.18.02 8.37.02 12.54h.02c0 3.86.04 7.7 0 11.56Z"/><path d="M537.12 166.19c-.05-3.53-1.56-6.54-4.64-8.53-2.81-1.81-5.94-2.08-9.17-1.78-5.65.54-9.6 4.47-9.84 10.11-.2 4.31-.04 8.64-.04 12.97h-.07v11.99c0 .4.05.78.09 1.16.36 3.62 1.88 6.58 5.13 8.44 2.63 1.5 5.51 1.7 8.44 1.49 5.76-.42 10-4.57 10.11-10.27.14-8.51.13-17.07-.02-25.58Zm-7.64 9.09v3.68h-.02c0 4.08.02 8.17 0 12.25 0 .65-.2 1.3-.36 1.94-.07.31-.24.62-.43.87-1.27 1.54-2.99 1.47-4.69 1.18-1.5-.25-2.32-1.29-2.57-2.74-.11-.62-.18-1.25-.18-1.87v-23.55c.05-3.64 1.87-5.07 5.67-4.35 1.61.31 2.54 1.68 2.59 3.82.05 2.92.04 5.83.04 8.77h-.04Z"/><path d="M642.5 178.65v22.88c-1.16 0-2.32.04-3.46 0-.18 0-.4-.31-.51-.53-.4-.85-.76-1.74-1.16-2.7-.34.36-.62.71-.92 1.01-2.72 2.84-6.09 3.39-9.75 2.52s-5.96-3.3-7.01-6.85c-.36-1.25-.58-2.57-.58-3.88-.05-8.08-.04-16.16-.02-24.26 0-5.13 2.81-9.24 7.36-10.47 4.58-1.27 8.93-.82 12.46 2.77 2.12 2.17 2.99 4.93 3.19 7.88.09 1.3 0 2.61 0 3.97h-7.3c-.14-1.49-.24-2.93-.43-4.38-.09-.67-.31-1.34-.56-1.96-.65-1.52-1.97-2.21-3.8-2.08-1.5.13-2.43.91-2.86 2.54-.16.69-.27 1.41-.27 2.12q-.03 11.76 0 23.55c0 .4.02.83.09 1.23.42 2.74 2.23 3.89 4.91 3.19 1.01-.27 1.78-.89 2.12-1.88.25-.69.4-1.43.53-2.16.09-.47.07-.96.07-1.43v-5.04h-4.82v-6.03h12.72l.02-.02Z"/><path d="M339.11 156.42h-9.69c-2.79 15.02-5.56 30.02-8.35 45.05h7.54c.47-3.32.94-6.61 1.41-9.96 2.55 0 5.04.04 7.52-.02.76-.02 1.01.22 1.11.98.36 2.99.8 5.96 1.23 9h7.59c-2.79-15.05-5.56-30.04-8.35-45.05Zm-7.97 28.35c1.01-6.39 2.01-12.72 3.01-19.02h.16c1 6.3 1.99 12.61 3.01 19.04h-6.18z"/><path d="M506.98 195.5c-1.32 3.44-3.82 5.54-7.41 6.38-2.55.58-5.11.49-7.63-.22-4.62-1.32-7.55-5.27-7.57-10.34-.05-8.21-.05-16.41 0-24.62.04-6.2 4.37-10.56 10.56-10.87 1.94-.11 3.84-.04 5.67.63 3.99 1.45 6.14 4.46 6.87 8.46.38 2.1.31 4.26.45 6.47h-8.03v-1.45c-.09-1.39-.02-2.83-.31-4.18-.53-2.63-2.68-3.75-5.24-2.88-1.52.51-2.05 1.74-2.25 3.17-.09.67-.11 1.36-.11 2.05v21.85c0 .89.04 1.79.24 2.66.45 2.16 1.85 3.01 4.47 2.83 1.83-.13 2.97-1.27 3.1-3.3.11-1.85.07-3.7.09-5.54v-1.12h7.92c-.13 3.39.42 6.78-.83 10.04Z"/><path d="M403.82 192.98c-.72 4.67-4.18 8.1-9.08 8.88-2.01.33-4.04.43-6.05-.11-4.62-1.23-7.07-4.51-8.19-8.95-.27-1.01-.34-2.08-.53-3.19 2.57-.38 4.98-.72 7.34-1.05.33 1.29.51 2.54.92 3.7.89 2.45 2.75 3.5 5.11 3.03 1.87-.36 3.15-1.87 3.21-3.77.09-2.07-.58-3.93-1.97-5.4-1.61-1.72-3.37-3.3-5.14-4.86-2.21-1.92-4.47-3.79-6.14-6.23-2.46-3.59-3.08-7.54-2.05-11.68 1.03-4.18 3.97-6.47 8.08-7.28 1.92-.4 3.88-.53 5.8-.11 4.69 1.03 7.05 4.26 8.15 8.66.16.65.24 1.32.36 2.08-2.48.29-4.87.56-7.3.83-.2-.8-.34-1.56-.6-2.28-.63-1.72-1.94-2.66-3.64-2.68-2.23-.02-3.62 1.3-3.86 3.73-.2 1.97.51 3.7 1.83 5.07 1.63 1.72 3.46 3.28 5.18 4.93 1.87 1.81 3.84 3.51 5.53 5.49 2.72 3.21 3.7 7.01 3.04 11.2Z"/><path d="M601.78 163.16v11.56h9.96v6.81h-9.96v13.14h12.02v6.79h-19.89v-45.02h19.91v6.72z"/><path d="M656.7 163.18v11.52h9.88v6.81h-9.88v13.16h11.94v6.81H648.8v-45.04h19.88v6.74z"/><path d="M563.19 194.72v6.72h-19.93v-45.02h7.72v38.3z"/><path d="M588.66 194.68v6.76h-19.95v-45.02h7.76v38.26z"/></g><path fill="#FFFFFF" d="M280.3 193.99c-4.22 2.87-9.34 3.75-14.62 3.75-11.69 0-18.73-7.08-18.73-17.65 0-11.29 6.89-20.42 20.07-20.42 10.46 0 17.29 5.44 17.29 15.34 0 7.9-4.96 13.6-11.26 13.6-1.81 0-3.74-.46-4.48-2.82h-.11c-1.71 1.8-3.9 2.82-6.35 2.82-4.7 0-6.62-3.69-6.62-7.65 0-5.8 4.22-12.93 10.84-12.93 2.67 0 4.64.77 5.87 3.03l1.17-2.16h2.99l-4 13.03c-.37 1.13-.69 3.34 1.39 3.34 4.16 0 6.94-4.41 6.94-10.26 0-8.11-5.28-12.16-13.66-12.16-11.58 0-16.44 7.65-16.44 17.24 0 8.62 5.71 14.47 15.11 14.47 4.96 0 9.29-1.08 12.65-3.49l1.98 2.92Zm-9.87-18.74c0-2.36-1.23-4-4-4-4.8 0-7.05 5.64-7.05 9.6 0 2.98 1.28 4.46 3.42 4.46 4.96 0 7.63-6.26 7.63-10.06"/></svg>`;
+  ['fwm1','fwm3'].forEach(id=>{ const e=document.getElementById(id); if(e) e.innerHTML=fwmSvg; });
+
+
+  // Build the right-hand measurement brackets AFTER layout settles, reading the real
+  // rendered geometry of Side 3 so the numbers match what's drawn. 1in = 8.38px.
+  window.addEventListener('load', ()=>{
+    const PXPERIN = 8.38;
+    const side3 = document.querySelectorAll('.col')[2];
+    const ply = side3.querySelector('.ply');
+    const plyRect = ply.getBoundingClientRect();
+    const measure = document.getElementById('measure3');
+
+    const header = side3.querySelector('.hdrgreen').getBoundingClientRect();
+    const intro  = side3.querySelectorAll('.gpanel')[0].getBoundingClientRect();
+    const train  = side3.querySelector('.train').getBoundingClientRect();
+    const low     = side3.querySelector('.lowband').getBoundingClientRect();
+    const ftr     = side3.querySelector('.ftr').getBoundingClientRect();
+    const plaqueRow = side3.querySelector('.plaquerow').getBoundingClientRect();
+
+    // zones (top px relative to pillar top, and px heights)
+    function rel(r){ return { top: r.top - plyRect.top, h: r.height }; }
+    const zones = [
+      { lab:'Header', sub:'wordmark band', r: rel(header) },
+      { lab:'Content', sub:'intro \u2192 trainings', r: { top: rel(intro).top, h: (train.bottom - intro.top) } },
+      { lab:'Gap', sub:'bare plywood', r: { top: (train.bottom - plyRect.top), h: (low.top - train.bottom) } },
+      { lab:'Footer band', sub:'hours \u2022 socials \u2022 address', r: { top: rel(low).top, h: (ftr.bottom - low.top) } },
+    ];
+    measure.style.height = plyRect.height + 'px';
+    let html='';
+    zones.forEach(z=>{
+      const inches = (z.r.h / PXPERIN);
+      const inTxt = inches >= 10 ? Math.round(inches) : inches.toFixed(1);
+      html += `<div class="brk" style="top:${z.r.top}px;height:${z.r.h}px;">
+        <div class="v">~${inTxt}&Prime;<small>${z.lab}</small></div></div>`;
+    });
+    measure.innerHTML = html;
+
+    // also annotate the plaque squares as 8x8 with a tiny inline note
+    // (left as the on-plaque "8\u00d78\u2033" label already present)
+  });
+</script>
+</body>
+</html>
