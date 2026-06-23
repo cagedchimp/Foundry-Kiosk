@@ -43,6 +43,11 @@
   .fld input,.fld textarea,.fld select{width:100%;font:inherit;font-size:13px;color:var(--uitext);background:#0e1714;border:1px solid var(--uiline);border-radius:7px;padding:7px 9px;resize:vertical;}
   .fld input:focus,.fld textarea:focus,.fld select:focus{outline:none;border-color:var(--teal);}
   .fld textarea{line-height:1.4;}
+  .imrow{display:flex;gap:10px;align-items:center;}
+  .imthumb{width:46px;height:46px;flex:0 0 auto;border-radius:6px;object-fit:cover;border:1px solid var(--uiline);background:#0e1714 center/cover no-repeat;}
+  .imthumb.empty{display:flex;align-items:center;justify-content:center;font-size:8.5px;color:#5e7068;text-align:center;line-height:1.1;}
+  .imbtns{display:flex;gap:6px;flex-wrap:wrap;}
+  .imbtn{font-size:11.5px;padding:5px 10px;}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;}
   .subcard{border:1px solid var(--uiline);border-radius:8px;padding:9px 9px 2px;margin:0 0 9px;background:rgba(255,255,255,.015);}
@@ -215,6 +220,8 @@
   .poster.p2 .ph{color:var(--forest);}
   .poster .pq{width:11px;height:11px;border:1.5px solid var(--gold);border-radius:2px;align-self:flex-end;}
   .poster.p2 .pq{border-color:var(--forest);}
+  .poster .posterimg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:3;}
+  .cap i img{width:100%;height:100%;object-fit:contain;padding:2px;}
 
   .sectionhdr{display:flex;align-items:center;gap:6px;background:var(--forest);border-radius:5px;padding:6px 9px;margin-bottom:11px;position:relative;}
   .sectionhdr .dotlive{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 2px rgba(242,180,23,.28);flex:0 0 auto;}
@@ -230,6 +237,7 @@
   .plaque .inner{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:6px 3px 5px;}
   .plaque .photo{width:26px;height:26px;border-radius:4px;flex:0 0 auto;background:var(--forest);border:2px solid #fff;display:flex;align-items:center;justify-content:center;position:relative;}
   .plaque .photo .ph-init{font-size:10px;font-weight:900;color:var(--teal);}
+  .plaque .photo .ph-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:3px;}
   .plaque .photo .tape{position:absolute;top:-3px;left:50%;transform:translateX(-50%) rotate(-4deg);width:13px;height:6px;background:rgba(242,180,23,.6);}
   .plaque .pname{font-size:7px;font-weight:900;line-height:.96;text-transform:uppercase;letter-spacing:-.01em;color:#fff;margin-top:5px;}
   .plaque .ppill{display:inline-block;margin-top:3px;background:var(--gold);color:var(--forest);font-size:4.5px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;padding:1px 4px;border-radius:2px;}
@@ -331,6 +339,7 @@
 </div>
 <div id="printroot"></div>
 <input type="file" id="fileinput" accept="application/json" style="display:none">
+<input type="file" id="imginput" accept="image/*" style="display:none">
 
 <!-- Real scannable QR codes. Local vendored MIT lib (Kazuhiko Arase), no build/network. -->
 <script src="vendor/qrcode-generator.js"></script>
@@ -422,6 +431,7 @@ function defaults(){ return {
     moreBadge:"All free to the BOW community",
     capsTitle:"Go beyond the expected",
     caps:["Woodshop","Digital Fabrication","Fashion & Textiles","3D Printing & Electronics","Kitchen"],
+    capImgs:["","","","",""],
     flowTitle:"From concept to product",
     steps:[{h:"Bring it",p:"Any idea"},{h:"Learn it",p:"Get trained"},{h:"Make it",p:"Build it"}],
     qrSmall:"New here?",
@@ -451,8 +461,8 @@ function defaults(){ return {
       {pill:"Drop in",cls:"teal",p:"Most spaces welcome drop-ins when open & unbooked. Just show up."},
     ],
     posters:[
-      {date:"Fri Mar 7",title:"Screen\nPrinting",qrUrl:""},
-      {date:"Sat Mar 8",title:"Open\nBuild",qrUrl:""},
+      {date:"Fri Mar 7",title:"Screen\nPrinting",qrUrl:"",img:""},
+      {date:"Sat Mar 8",title:"Open\nBuild",qrUrl:"",img:""},
     ],
   },
   s3:{
@@ -465,9 +475,9 @@ function defaults(){ return {
     shiftTitle:"Scouts on shift today",
     shiftSub:"8×8″ · shared cleat",
     scouts:[
-      {init:"AR",name:"Avery R.",role:"Woodshop"},
-      {init:"JL",name:"Jordan L.",role:"Textiles"},
-      {init:"",name:"",role:""},
+      {init:"AR",name:"Avery R.",role:"Woodshop",photo:""},
+      {init:"JL",name:"Jordan L.",role:"Textiles",photo:""},
+      {init:"",name:"",role:"",photo:""},
     ],
     trainLabel:"Use a machine?",
     trainTitle:"Get trained",
@@ -499,9 +509,14 @@ let saveTimer=null;
 function persist(){
   clearTimeout(saveTimer);
   saveTimer=setTimeout(()=>{
-    localStorage.setItem(STORE_KEY, JSON.stringify(state));
-    const el=document.getElementById('savestate'); el.textContent='Saved locally ✓';
-    setTimeout(()=>{ el.textContent='Saved locally'; },1200);
+    const el=document.getElementById('savestate');
+    try{
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      el.textContent='Saved locally ✓';
+      setTimeout(()=>{ if(el.textContent==='Saved locally ✓') el.textContent='Saved locally'; },1200);
+    }catch(err){
+      el.textContent='⚠ Too big to auto-save — use Export';
+    }
   },180);
 }
 function get(path){ return path.split('.').reduce((o,k)=> (o==null?o:o[k]), state); }
@@ -539,7 +554,11 @@ function cMore(){
   return `<div class="more"><p>${fmt(S.moreBody)} <span class="free">${fmt(S.moreBadge)}</span></p></div>`;
 }
 function cCaps(){
-  const cells=S.caps.map((l,i)=>`<div class="cap"><i><svg viewBox="0 0 24 24" fill="none">${ICONS[i]||''}</svg></i><span>${esc(l)}</span></div>`).join('');
+  const cells=S.caps.map((l,i)=>{
+    const im=(S.capImgs&&S.capImgs[i])||'';
+    const glyph= im ? `<img src="${im}" alt="">` : `<svg viewBox="0 0 24 24" fill="none">${ICONS[i]||''}</svg>`;
+    return `<div class="cap"><i>${glyph}</i><span>${esc(l)}</span></div>`;
+  }).join('');
   return `<div class="caps"><div class="ct2">${fmt(S.capsTitle)}</div><div class="capgrid">${cells}</div></div>`;
 }
 function cFlow(){
@@ -574,6 +593,7 @@ function cInfo(){
 }
 function cPoster(i){
   const p=S.posters[i]; const cls=i===0?'p1':'p2';
+  if(p.img){ return `<div class="poster ${cls}"><img class="posterimg" src="${p.img}" alt=""></div>`; }
   const url=(p.qrUrl==null?'':String(p.qrUrl)).trim();
   let pq='<div class="pq"></div>';
   if(url){ try{ pq=`<div class="pq has">${qrSVG(url)}</div>`; }catch(e){} }
@@ -590,8 +610,9 @@ function plaque(i){
   if(!sc.name || !sc.name.trim()){
     return `<div class="empty"><div class="ecleat"></div><div class="eicon">+</div><div class="etxt">Open</div></div>`;
   }
+  const face = sc.photo ? `<img class="ph-img" src="${sc.photo}" alt="">` : `<span class="ph-init">${esc(sc.init)}</span>`;
   return `<div class="plaque"><div class="pat">${SCOUT_PAT[i%2]}</div>
-    <div class="inner"><div class="photo"><span class="tape"></span><span class="ph-init">${esc(sc.init)}</span></div>
+    <div class="inner"><div class="photo"><span class="tape"></span>${face}</div>
     <div class="pname">${esc(sc.name)}</div><div class="ppill">Scout</div><div class="prole"><b>${esc(sc.role)}</b></div></div></div>`;
 }
 function cShift(){
@@ -691,6 +712,35 @@ function SELcls(path,label){
     <option value="teal"${v==='teal'?' selected':''}>Teal</option></select></label>`;
 }
 function grp(title, inner){ return `<div class="grp"><h4>${title}</h4>${inner}</div>`; }
+function imageField(path,label,kind){
+  const v=get(path)||'';
+  const thumb = v ? `<img class="imthumb" src="${v}" alt="">` : `<div class="imthumb empty">no<br>image</div>`;
+  return `<div class="fld"><span>${label}</span><div class="imrow">${thumb}<div class="imbtns">`+
+    `<button type="button" class="btn ghost imbtn" data-imgpick="${path}" data-imgkind="${kind}">${v?'Replace…':'Choose…'}</button>`+
+    (v?`<button type="button" class="btn ghost imbtn" data-imgclear="${path}">Remove</button>`:'')+
+    `</div></div></div>`;
+}
+// Load an image file, downscale it on a canvas, return a data URL (keeps localStorage small).
+function loadDownscaled(file, maxDim, mime){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onerror=()=>rej(new Error('read failed'));
+    fr.onload=()=>{
+      const img=new Image();
+      img.onerror=()=>rej(new Error('not an image'));
+      img.onload=()=>{
+        const s=Math.min(1, maxDim/Math.max(img.width,img.height));
+        const cw=Math.max(1,Math.round(img.width*s)), ch=Math.max(1,Math.round(img.height*s));
+        const cv=document.createElement('canvas'); cv.width=cw; cv.height=ch;
+        cv.getContext('2d').drawImage(img,0,0,cw,ch);
+        res(cv.toDataURL(mime, mime==='image/jpeg'?0.85:undefined));
+      };
+      img.src=fr.result;
+    };
+    fr.readAsDataURL(file);
+  });
+}
+const IMG_KINDS={photo:{max:700,mime:'image/jpeg'},poster:{max:1600,mime:'image/jpeg'},icon:{max:400,mime:'image/png'}};
 
 function editorHTML(tab){
   if(tab==='all') return [
@@ -715,11 +765,14 @@ function editorHTML(tab){
     grp('“What it is” panel',
       F('s1.moreBody','Body','area') +
       F('s1.moreBadge','Gold badge','text')),
-    grp('Capabilities (icons fixed by position)',
+    grp('Capabilities',
       F('s1.capsTitle','Section title','text') +
       `<div class="row2">${F('s1.caps.0','1','text')}${F('s1.caps.1','2','text')}</div>`+
       `<div class="row2">${F('s1.caps.2','3','text')}${F('s1.caps.3','4','text')}</div>`+
-      F('s1.caps.4','5','text')),
+      F('s1.caps.4','5','text') +
+      `<details class="adv"><summary>Custom icons (optional — replace the built-in line icons)</summary><div class="advbody">`+
+        [0,1,2,3,4].map(i=>imageField(`s1.capImgs.${i}`, state.s1.caps[i]||('Icon '+(i+1)), 'icon')).join('')+
+      `</div></details>`),
     grp('Concept → product',
       F('s1.flowTitle','Section title','text') +
       stepCard(0)+stepCard(1)+stepCard(2)),
@@ -761,8 +814,8 @@ function editorHTML(tab){
 }
 function stepCard(i){ const d=state.s1.steps[i]; return `<div class="subcard"><div class="lab">Step ${i+1}</div><div class="row2">${F(`s1.steps.${i}.h`,'Title','text')}${F(`s1.steps.${i}.p`,'Caption','text')}</div></div>`; }
 function infoCard(i){ return `<div class="subcard"><div class="lab">Row ${i+1}</div><div class="row2">${F(`s2.info.${i}.pill`,'Pill label','text')}${SELcls(`s2.info.${i}.cls`,'Pill colour')}</div>${F(`s2.info.${i}.p`,'Text','area')}</div>`; }
-function posterCard(i){ return `<div class="subcard"><div class="lab">Poster ${i+1} · ${i===0?'forest':'teal'}</div>${F(`s2.posters.${i}.date`,'Date','text')}${F(`s2.posters.${i}.title`,'Title (line breaks ok)','area')}${F(`s2.posters.${i}.qrUrl`,'QR URL → live scannable QR (optional)','text')}</div>`; }
-function scoutCard(i){ return `<div class="subcard"><div class="lab">Slot ${i+1}</div><div class="row3">${F(`s3.scouts.${i}.init`,'Initials','text')}${F(`s3.scouts.${i}.name`,'Name','text')}${F(`s3.scouts.${i}.role`,'Specialty','text')}</div></div>`; }
+function posterCard(i){ return `<div class="subcard"><div class="lab">Poster ${i+1} · ${i===0?'forest':'teal'}</div>${F(`s2.posters.${i}.date`,'Date','text')}${F(`s2.posters.${i}.title`,'Title (line breaks ok)','area')}${F(`s2.posters.${i}.qrUrl`,'QR URL → live scannable QR (optional)','text')}${imageField(`s2.posters.${i}.img`,'Artwork (optional — replaces placeholder, full-bleed)','poster')}</div>`; }
+function scoutCard(i){ return `<div class="subcard"><div class="lab">Slot ${i+1}</div><div class="row3">${F(`s3.scouts.${i}.init`,'Initials','text')}${F(`s3.scouts.${i}.name`,'Name','text')}${F(`s3.scouts.${i}.role`,'Specialty','text')}</div>${imageField(`s3.scouts.${i}.photo`,'Photo (optional — replaces initials)','photo')}</div>`; }
 
 /* ============================ wiring ============================ */
 const ui={ tab:'s1', side:'s1', target:'face' };
@@ -821,6 +874,25 @@ editorEl.addEventListener('input', e=>{
   renderPreview();
 });
 
+// image upload / clear (Scout photos, poster artwork, custom icons)
+const imgInput=document.getElementById('imginput');
+let pendingImg=null;
+editorEl.addEventListener('click', e=>{
+  const pick=e.target.closest('[data-imgpick]');
+  if(pick){ pendingImg={path:pick.dataset.imgpick, kind:pick.dataset.imgkind}; imgInput.value=''; imgInput.click(); return; }
+  const clr=e.target.closest('[data-imgclear]');
+  if(clr){ set(clr.dataset.imgclear, ''); persist(); renderEditor(); renderPreview(); }
+});
+imgInput.addEventListener('change', async e=>{
+  const f=e.target.files[0]; if(!f||!pendingImg) return;
+  const cfg=IMG_KINDS[pendingImg.kind]||{max:1000,mime:'image/jpeg'};
+  try{
+    const data=await loadDownscaled(f, cfg.max, cfg.mime);
+    set(pendingImg.path, data); persist(); renderEditor(); renderPreview();
+  }catch(err){ alert('Could not load that image: '+((err&&err.message)||err)); }
+  pendingImg=null;
+});
+
 // tabs
 document.getElementById('tabs').addEventListener('click', e=>{
   const b=e.target.closest('[data-tab]'); if(!b) return;
@@ -840,9 +912,14 @@ let pageStyle=document.createElement('style'); document.head.appendChild(pageSty
 let printMarks=false;
 document.getElementById('marks').addEventListener('change', e=>{ printMarks=e.target.checked; });
 
-// full-bleed pieces (solid edge colour) → extend that colour into the bleed
+// full-bleed pieces → extend their edge into the bleed (solid colour, or the poster image)
 const BLEED_COLOR={p1:'#063d2a',p2:'#6cc5c0',pl1:'#0d5b3e',pl2:'#0d5b3e',pl3:'#0d5b3e'};
-function bleedColorFor(){ return (ui.tab==='all')?null : (BLEED_COLOR[ui.target]||null); }
+function bleedBgFor(){
+  if(ui.tab==='all') return null;
+  const t=ui.target;
+  if(t==='p1'||t==='p2'){ const p=state.s2.posters[t==='p1'?0:1]; if(p&&p.img) return `url('${p.img}') center/cover`; }
+  return BLEED_COLOR[t]||null;
+}
 
 function cropMarks(W,H,pad,bleed,gap,mark,st){
   const o=bleed+gap, L=pad, R=pad+W, T=pad, B=pad+H;
@@ -858,7 +935,7 @@ function buildPrintScale(html){
   root.innerHTML=`<div id="measurebox" style="position:absolute;left:-99999px;top:0;">${html}</div>`;
   const el=document.getElementById('measurebox').firstElementChild;
   const W=el.offsetWidth, H=el.offsetHeight;
-  const bc=bleedColorFor();
+  const bc=bleedBgFor();
   const BLEED=(bc?0.125:0)*PXIN, GAP=0.06*PXIN, MARK=0.14*PXIN, ST=Math.max(0.1,0.012*PXIN), PAD=BLEED+GAP+MARK+0.02*PXIN;
   const bleedBox = bc ? `<div style="position:absolute;left:${PAD-BLEED}px;top:${PAD-BLEED}px;width:${W+2*BLEED}px;height:${H+2*BLEED}px;background:${bc};"></div>` : '';
   return `<div id="printscale" class="marksmode" style="position:relative;width:${W+2*PAD}px;height:${H+2*PAD}px;background:#fff;">`

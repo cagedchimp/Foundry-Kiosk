@@ -45,6 +45,23 @@ The exported PDFs are built to be print-ready, not just screenshots:
 | Scout plaque 1 / 2 / 3 | 8 × 8 in |
 | All three faces | ~82 × 84 in (one wide sheet) |
 
+## Images
+
+Three places take a real uploaded image (click **Choose…**, then **Replace…** / **Remove**):
+
+- **Scout photos** (Side 3) — fills the plaque photo box; falls back to initials if empty.
+- **Poster artwork** (Side 2) — replaces the generated placeholder with your full-bleed
+  image; it also extends into the print-marks bleed.
+- **Custom capability icons** (Side 1, under the *Custom icons* toggle) — swap any of the
+  five built-in line icons for your own.
+
+Uploads are **downscaled in the browser** (photos ~700px, posters ~1600px, icons ~400px)
+and stored as data URLs — so they persist locally and travel inside **Export/Import JSON**.
+Nothing is uploaded anywhere. If you add many large images and auto-save hits the browser's
+storage limit, the save indicator warns you — use **Export** to keep a copy. For premium
+edge-to-edge poster printing, prep final artwork at full resolution in a dedicated tool;
+the in-app image is best for proofing the pillar and for sleeved/mounted prints.
+
 ## Text formatting
 
 - `*word*` → gold emphasis  ·  `**word**` → bold  ·  line breaks split lines.
@@ -77,7 +94,7 @@ reuses their component CSS. For print the target is wrapped and scaled with CSS 
 so 8.38 design-px maps to 1 real inch, then `@page` is sized to the measured box. Preview
 fits the same markup to the pane. Edit one place, both stay in sync.
 
-> Remaining placeholders before a final run: real Scout photos and event-poster artwork
-> (the editor renders generated placeholders), and the content checklist in
-> `../docs/CONTENT.md` (hours, handles, QR URLs, Scout names). Always test-scan the final
-> PDF's QR codes and proof one face at full size before ordering prints.
+> Remaining before a final run: the content checklist in `../docs/CONTENT.md` (hours,
+> handles, QR URLs, Scout names) and dropping in the real Scout photos / poster artwork /
+> icons. Always test-scan the final PDF's QR codes and proof one face at full size before
+> ordering prints.
