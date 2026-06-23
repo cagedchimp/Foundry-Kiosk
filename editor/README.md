@@ -6,8 +6,8 @@ of each face — or of any individual mounted piece — at its exact real-world 
 ## Use it
 
 Open `editor/index.html` in **Chrome or Edge** (no build, no server, no install — just
-double-click). Keep the `vendor/` folder beside it (it holds the offline QR-code library).
-Then:
+double-click). Keep the `vendor/` folder (offline QR library + embedded Archivo fonts)
+and the sibling `brand/` folder (wordmark + pattern) in place. Then:
 
 1. Pick a face tab (**Side 1 / 2 / 3**), **All faces** (see all three at once), or
    **Shared** (footer hours, socials, address).
@@ -15,8 +15,24 @@ Then:
    browser's local storage.
 3. Choose an **Export target** (the whole 26×84″ face, a single piece, or — on the
    All-faces tab — the whole pillar as one wide sheet).
-4. Click **Print / Save PDF** → in the print dialog choose *Save as PDF*. The page is
+4. (Optional) Tick **Print marks** to add a 0.125″ bleed (on full-bleed pieces like
+   posters/plaques) and corner crop marks for a print shop.
+5. Click **Print / Save PDF** → in the print dialog choose *Save as PDF*. The page is
    pre-sized to the target's true dimensions, so the output is vector-sharp and to scale.
+
+## Print quality
+
+The exported PDFs are built to be print-ready, not just screenshots:
+
+- **Archivo is embedded** (vendored woff2, `vendor/fonts/`), so type is brand-correct on
+  any machine or at the print shop — no font substitution.
+- **Backgrounds always print.** Colours, QR codes, and the pattern bands are forced on
+  via `print-color-adjust`, so you don't have to fiddle with the browser's "Background
+  graphics" setting.
+- **Real brand pattern.** The header/footer bands now use crops of
+  `brand/Foundry_Pattern.jpg` (not the old SVG reconstruction).
+- **Exact sizes.** Every target prints at its true dimension (a plaque is a real 8×8″,
+  a poster a real 11×17″, etc.).
 
 ## Export targets & sizes
 
@@ -61,5 +77,7 @@ reuses their component CSS. For print the target is wrapped and scaled with CSS 
 so 8.38 design-px maps to 1 real inch, then `@page` is sized to the measured box. Preview
 fits the same markup to the pane. Edit one place, both stay in sync.
 
-> The pattern bands are still the SVG reconstruction — swap for real
-> `brand/Foundry_Pattern.jpg` crops before final printing (see `../docs/CONTENT.md`).
+> Remaining placeholders before a final run: real Scout photos and event-poster artwork
+> (the editor renders generated placeholders), and the content checklist in
+> `../docs/CONTENT.md` (hours, handles, QR URLs, Scout names). Always test-scan the final
+> PDF's QR codes and proof one face at full size before ordering prints.

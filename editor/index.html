@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Foundry Kiosk Editor — edit copy &amp; export print-ready PDFs</title>
 <style>
+  /* Archivo (variable, weights 100–900) — embedded so PDFs are brand-correct on any
+     machine / at the print shop. Vendored woff2 (SIL OFL), loaded offline. */
+  @font-face{font-family:'Archivo';font-style:normal;font-weight:100 900;font-display:swap;
+    src:url('vendor/fonts/archivo-wght-normal.woff2') format('woff2');}
+  @font-face{font-family:'Archivo';font-style:italic;font-weight:100 900;font-display:swap;
+    src:url('vendor/fonts/archivo-wght-italic.woff2') format('woff2');}
   :root{
     --green:#0d5b3e; --forest:#063d2a; --gold:#f2b417; --teal:#6cc5c0; --sage:#7fa653;
     --paper:#f7f4ec; --ink:#0a261b;
@@ -65,6 +71,8 @@
   .btn.primary:hover{filter:brightness(1.05);}
   .btn.ghost{background:transparent;}
   .dim-note{font-size:11px;color:var(--uimut);margin-left:2px;}
+  .ctrl .chk{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--uimut);font-weight:600;cursor:pointer;user-select:none;}
+  .ctrl .chk input{accent-color:var(--gold);width:14px;height:14px;cursor:pointer;}
 
   .stage{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:24px;background:
      radial-gradient(circle at 50% 0,#15201b,#0d1410 70%);}
@@ -79,7 +87,12 @@
     .app{display:none !important;}
     #printroot{position:absolute;left:0;top:0;}
     html,body{background:#fff;}
+    /* without this, browsers drop background colours/images — every green/gold panel,
+       the QR codes and the pattern bands would print white. */
+    #printroot, #printroot *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;}
   }
+  /* also keep colours saturated in the on-screen preview backdrop */
+  #ptarget *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 
   /* ======================================================================
      PILLAR COMPONENTS — ported verbatim from renders/pillar_all_sides_measured.html
@@ -98,6 +111,12 @@
   .toprow{display:flex;}
   .toprow .tt{width:9px;height:9px;flex:0 0 auto;overflow:hidden;}
   .toprow .tt svg{display:block;width:100%;height:100%;}
+  /* real brand pattern band (crops of brand/Foundry_Pattern.jpg, 8x6 grid of square tiles).
+     Scaled so one tile row = the 9px band height; --prow (0..5) picks which row shows. */
+  .patband{height:9px;width:100%;overflow:hidden;background:var(--forest);
+    background-image:url('../brand/Foundry_Pattern.jpg');
+    background-size:auto 54px; background-repeat:repeat-x;
+    background-position-x:0; background-position-y:calc(var(--prow,0) * -9px);}
   .hdrgreen{background:var(--green);border-radius:6px;overflow:hidden;position:relative;}
   .hdrgreen .band{padding:9px 10px 10px;text-align:center;position:relative;}
   .hdrgreen .gco{position:absolute;width:60px;height:60px;border-radius:50%;background:rgba(127,166,83,.16);top:-22px;right:-18px;z-index:0;}
@@ -220,8 +239,11 @@
   .empty .ecleat{position:absolute;top:9px;left:9px;right:9px;height:3px;border-radius:2px;background:rgba(90,60,25,.34);}
   .empty .eicon{width:15px;height:15px;border-radius:50%;border:1.5px dashed rgba(90,60,25,.5);display:flex;align-items:center;justify-content:center;color:rgba(90,60,25,.6);font-size:10px;font-weight:300;margin-top:6px;}
   .empty .etxt{font-size:4.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:rgba(90,60,25,.62);text-align:center;margin-top:4px;}
-  /* standalone plaque/empty piece keeps a wood-ish backdrop so the dashed cleat reads */
-  .frame.plaquepiece{background:#e3c08c;border-radius:6px;padding:5px;}
+  /* plaque pieces print edge-to-edge at exactly 8x8 (no wood frame / padding) */
+  .frame.plaquepiece{background:transparent;padding:0;}
+
+  /* print-marks mode: square the outer trim so the colour bleed lines up cleanly */
+  .marksmode .frame,.marksmode .ply,.marksmode .poster,.marksmode .plaque,.marksmode .empty{border-radius:0 !important;box-shadow:none !important;}
 
   .train{background:var(--paper);border-radius:6px;padding:9px 9px;display:flex;align-items:center;gap:8px;}
   .train .tinfo{flex:1;}
@@ -298,6 +320,7 @@
       </label>
       <span class="dim-note" id="dimnote"></span>
       <div class="spacer"></div>
+      <label class="chk" title="Add 0.125in bleed (full-bleed pieces) and corner crop marks for a print shop"><input type="checkbox" id="marks"> Print marks</label>
       <button class="btn ghost" id="exportbtn" title="Download all copy as JSON">Export</button>
       <button class="btn ghost" id="importbtn" title="Load copy from a JSON file">Import</button>
       <button class="btn ghost" id="resetbtn" title="Restore placeholder copy">Reset</button>
@@ -347,6 +370,8 @@ function strip(cls, n, off){
   let h=''; for(let i=0;i<n;i++){ h+=`<div class="${cls}"><svg viewBox="0 0 20 20" preserveAspectRatio="xMidYMid slice">${MOTIFS[(i+off)%MOTIFS.length]()}</svg></div>`; }
   return h;
 }
+// A real-pattern band (row 0..5 of brand/Foundry_Pattern.jpg). Replaces the SVG strip.
+function patBand(prow){ return `<div class="patband" style="--prow:${prow};"></div>`; }
 /* ---- capability icons (index-aligned to s1.caps) ---- */
 const ICONS = [
   '<rect stroke="#f2b417" stroke-width="2.1" x="5" y="9" width="14" height="8" rx="1"/><path stroke="#f2b417" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" d="M7 9V4h10v5M8 17v3h8v-3"/>',
@@ -499,11 +524,11 @@ function fmt(s){
 /* ============================ components ============================ */
 let S=null, G=null; // set per render
 function cHeader(side){
-  const off = side==='s1'?0 : side==='s2'?3 : 6;
+  const prow = side==='s1'?0 : side==='s2'?2 : 4;
   const inner = side==='s1'
     ? `<div class="wmwrap">${wm('#FFFFFF')}</div><div class="eyebrow" style="margin-top:9px;">${fmt(S.eyebrow)}</div>`
     : `<div class="eyebrow">${fmt(S.eyebrow)}</div><h3>${fmt(S.title)}</h3>`;
-  return `<div class="hdrgreen"><div class="toprow">${strip('tt',24,off)}</div>
+  return `<div class="hdrgreen">${patBand(prow)}
     <div class="band"><div class="gco"></div>${inner}<div class="rule"></div></div></div>`;
 }
 function cHeroS1(){
@@ -577,10 +602,10 @@ function cTrain(){
   return `<div class="train"><div class="tinfo"><div class="tlbl">${fmt(S.trainLabel)}</div><div class="tbig">${fmt(S.trainTitle)}</div><p>${fmt(S.trainBody)}</p></div>${qrBox('s', S.trainQrUrl)}</div>`;
 }
 function cFooter(side){
-  const off = side==='s1'?1 : side==='s2'?4 : 7;
+  const prow = side==='s1'?1 : side==='s2'?3 : 5;
   const chips=String(G.social).split(',').map(s=>`<i>${esc(s.trim())}</i>`).join('');
   const right = side==='s2' ? `<div class="lwm">Weissman<br><span>Foundry</span></div>` : `<div class="lwmmark">${wm('#FFFFFF')}</div>`;
-  return `<div class="lowband"><div class="lpat">${strip('lt',24,off)}</div>
+  return `<div class="lowband">${patBand(prow)}
     <div class="lin"><div class="lleft"><div class="lsoc">${chips}</div><div class="lhrs">${fmt(G.hours)}</div></div>
     <div class="ldiv"></div><div class="lright">${right}</div></div></div>
     <div class="ftr"><div class="fin"><div class="fmeta">${fmt(G.address)}</div></div></div>`;
@@ -812,10 +837,41 @@ targetSel.addEventListener('change', e=>{ ui.target=e.target.value; updateDimNot
 // print / save pdf
 document.getElementById('printbtn').addEventListener('click', doPrint);
 let pageStyle=document.createElement('style'); document.head.appendChild(pageStyle);
+let printMarks=false;
+document.getElementById('marks').addEventListener('change', e=>{ printMarks=e.target.checked; });
+
+// full-bleed pieces (solid edge colour) → extend that colour into the bleed
+const BLEED_COLOR={p1:'#063d2a',p2:'#6cc5c0',pl1:'#0d5b3e',pl2:'#0d5b3e',pl3:'#0d5b3e'};
+function bleedColorFor(){ return (ui.tab==='all')?null : (BLEED_COLOR[ui.target]||null); }
+
+function cropMarks(W,H,pad,bleed,gap,mark,st){
+  const o=bleed+gap, L=pad, R=pad+W, T=pad, B=pad+H;
+  const vb=(x,y)=>`<div style="position:absolute;left:${x-st/2}px;top:${y}px;width:${st}px;height:${mark}px;background:#000;"></div>`;
+  const hb=(x,y)=>`<div style="position:absolute;left:${x}px;top:${y-st/2}px;width:${mark}px;height:${st}px;background:#000;"></div>`;
+  return [ vb(L,T-o-mark),hb(L-o-mark,T), vb(R,T-o-mark),hb(R+o,T),
+           vb(L,B+o),hb(L-o-mark,B), vb(R,B+o),hb(R+o,B) ].join('');
+}
+function buildPrintScale(html){
+  if(!printMarks) return `<div id="printscale">${html}</div>`;
+  // measure trim at design scale (zoom 1)
+  const root=document.getElementById('printroot');
+  root.innerHTML=`<div id="measurebox" style="position:absolute;left:-99999px;top:0;">${html}</div>`;
+  const el=document.getElementById('measurebox').firstElementChild;
+  const W=el.offsetWidth, H=el.offsetHeight;
+  const bc=bleedColorFor();
+  const BLEED=(bc?0.125:0)*PXIN, GAP=0.06*PXIN, MARK=0.14*PXIN, ST=Math.max(0.1,0.012*PXIN), PAD=BLEED+GAP+MARK+0.02*PXIN;
+  const bleedBox = bc ? `<div style="position:absolute;left:${PAD-BLEED}px;top:${PAD-BLEED}px;width:${W+2*BLEED}px;height:${H+2*BLEED}px;background:${bc};"></div>` : '';
+  return `<div id="printscale" class="marksmode" style="position:relative;width:${W+2*PAD}px;height:${H+2*PAD}px;background:#fff;">`
+    + bleedBox
+    + `<div class="art" style="position:absolute;left:${PAD}px;top:${PAD}px;">${html}</div>`
+    + cropMarks(W,H,PAD,BLEED,GAP,MARK,ST)
+    + `</div>`;
+}
 function doPrint(){
   setRenderCtx(ui.side);
   const root=document.getElementById('printroot');
-  root.innerHTML=`<div id="printscale">${renderTarget(ui.side, ui.target)}</div>`;
+  const html=renderTarget(ui.side, ui.target);
+  root.innerHTML=buildPrintScale(html);
   const ps=document.getElementById('printscale');
   ps.style.zoom=PRINT_ZOOM;
   const r=ps.getBoundingClientRect();           // forces layout; dims already scaled by zoom
