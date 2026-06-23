@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foundry Kiosk Editor — edit copy &amp; export print-ready PDFs</title>
+<style>
+  :root{
+    --green:#0d5b3e; --forest:#063d2a; --gold:#f2b417; --teal:#6cc5c0; --sage:#7fa653;
+    --paper:#f7f4ec; --ink:#0a261b;
+    --in:8.38px; /* design scale: 1 inch = 8.38 design px (matches the renders) */
+    --ui:#1d2b25; --uipanel:#24332c; --uiline:#33473d; --uitext:#e8efe9; --uimut:#9fb3a8;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{margin:0;font-family:'Archivo','Archivo Narrow',system-ui,-apple-system,sans-serif;color:var(--uitext);background:#101713;}
+
+  /* ---------------- app shell ---------------- */
+  .app{display:grid;grid-template-columns:380px 1fr;grid-template-rows:52px 1fr;height:100vh;}
+  .topbar{grid-column:1 / -1;display:flex;align-items:center;gap:14px;padding:0 16px;background:var(--ui);border-bottom:1px solid var(--uiline);}
+  .topbar .brand{font-weight:900;letter-spacing:-.01em;font-size:15px;text-transform:uppercase;color:#fff;}
+  .topbar .brand span{color:var(--gold);}
+  .topbar .tabs{display:flex;gap:4px;margin-left:6px;}
+  .tab{appearance:none;border:1px solid var(--uiline);background:transparent;color:var(--uimut);font:inherit;font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:7px;cursor:pointer;}
+  .tab:hover{color:#fff;}
+  .tab.on{background:var(--green);border-color:var(--green);color:#fff;}
+  .topbar .spacer{flex:1;}
+  .topbar .meta{font-size:11px;color:var(--uimut);}
+
+  .editor{background:var(--ui);border-right:1px solid var(--uiline);overflow-y:auto;padding:14px 14px 60px;}
+  .editor .hint{font-size:11px;line-height:1.5;color:var(--uimut);background:var(--uipanel);border:1px solid var(--uiline);border-radius:8px;padding:8px 10px;margin:0 0 14px;}
+  .editor .hint code{background:#0d1511;color:var(--gold);padding:1px 4px;border-radius:3px;font-size:10.5px;}
+  .grp{margin:0 0 16px;}
+  .grp > h4{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin:0 0 8px;font-weight:800;}
+  .fld{display:block;margin:0 0 9px;}
+  .fld > span{display:block;font-size:11px;color:var(--uimut);margin:0 0 3px;font-weight:600;}
+  .fld input,.fld textarea,.fld select{width:100%;font:inherit;font-size:13px;color:var(--uitext);background:#0e1714;border:1px solid var(--uiline);border-radius:7px;padding:7px 9px;resize:vertical;}
+  .fld input:focus,.fld textarea:focus,.fld select:focus{outline:none;border-color:var(--teal);}
+  .fld textarea{line-height:1.4;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;}
+  .subcard{border:1px solid var(--uiline);border-radius:8px;padding:9px 9px 2px;margin:0 0 9px;background:rgba(255,255,255,.015);}
+  .subcard > .lab{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);font-weight:800;margin:0 0 7px;}
+  .editor code{background:#0d1511;color:var(--gold);padding:1px 4px;border-radius:3px;font-size:10.5px;}
+  .editor .note{font-size:11px;line-height:1.5;color:var(--uimut);background:rgba(108,197,192,.08);border-left:2px solid var(--teal);border-radius:0 6px 6px 0;padding:7px 10px;margin:0 0 9px;}
+  .editor .note b{color:#cfe6e3;}
+  .adv{border:1px solid var(--uiline);border-radius:8px;margin:0 0 9px;background:rgba(255,255,255,.015);}
+  .adv > summary{cursor:pointer;font-size:11px;font-weight:700;color:var(--teal);padding:8px 10px;list-style:none;user-select:none;}
+  .adv > summary::-webkit-details-marker{display:none;}
+  .adv > summary::before{content:'▸';color:var(--uimut);margin-right:6px;display:inline-block;}
+  .adv[open] > summary::before{content:'▾';}
+  .adv[open] > summary{border-bottom:1px solid var(--uiline);}
+  .advbody{padding:9px 10px 2px;}
+  .fld textarea{overflow:hidden;min-height:38px;}
+
+  /* ---------------- preview side ---------------- */
+  .right{display:flex;flex-direction:column;min-width:0;background:#0f1612;}
+  .ctrl{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--uiline);background:var(--ui);flex-wrap:wrap;}
+  .ctrl label.sel{font-size:11px;color:var(--uimut);font-weight:600;display:flex;align-items:center;gap:7px;}
+  .ctrl select{font:inherit;font-size:13px;font-weight:600;color:var(--uitext);background:#0e1714;border:1px solid var(--uiline);border-radius:7px;padding:6px 9px;min-width:230px;}
+  .ctrl .spacer{flex:1;}
+  .btn{appearance:none;font:inherit;font-size:13px;font-weight:700;border-radius:8px;padding:8px 14px;cursor:pointer;border:1px solid var(--uiline);background:var(--uipanel);color:var(--uitext);}
+  .btn:hover{border-color:var(--teal);}
+  .btn.primary{background:var(--gold);border-color:var(--gold);color:#3a2c05;}
+  .btn.primary:hover{filter:brightness(1.05);}
+  .btn.ghost{background:transparent;}
+  .dim-note{font-size:11px;color:var(--uimut);margin-left:2px;}
+
+  .stage{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:24px;background:
+     radial-gradient(circle at 50% 0,#15201b,#0d1410 70%);}
+  #ptarget{transform-origin:top center;}
+  .stage .frame{filter:drop-shadow(0 14px 30px rgba(0,0,0,.45));}
+  .stage .ply{filter:drop-shadow(0 18px 40px rgba(0,0,0,.5));}
+
+  /* print plumbing */
+  #printroot{position:absolute;left:-99999px;top:0;}
+  #printscale{display:inline-block;transform-origin:top left;}
+  @media print{
+    .app{display:none !important;}
+    #printroot{position:absolute;left:0;top:0;}
+    html,body{background:#fff;}
+  }
+
+  /* ======================================================================
+     PILLAR COMPONENTS — ported verbatim from renders/pillar_all_sides_measured.html
+     (the spec drawing). All sizes are in design px at 1in = 8.38px.
+     ====================================================================== */
+  .frame{position:relative;}
+  .ply{position:relative;width:218px;height:704px;border-radius:9px;overflow:hidden;
+    background:
+      repeating-linear-gradient(91deg, rgba(120,80,30,.05) 0 2px, transparent 2px 7px),
+      repeating-linear-gradient(89deg, rgba(150,100,40,.045) 0 1px, transparent 1px 15px),
+      linear-gradient(180deg,#e7c79a 0%,#e3c190 14%,#e8cd9c 30%,#dfba84 48%,#e6c794 66%,#e3c08c 82%,#e0bd88 100%);
+    padding:10px 10px 11px;display:flex;flex-direction:column;}
+  .ply::before{content:'';position:absolute;inset:0;border-radius:9px;border:1px solid rgba(90,60,25,.25);pointer-events:none;z-index:30;}
+  .mount{position:relative;z-index:5;border-radius:6px;box-shadow:0 5px 12px rgba(50,32,10,.32);}
+
+  .toprow{display:flex;}
+  .toprow .tt{width:9px;height:9px;flex:0 0 auto;overflow:hidden;}
+  .toprow .tt svg{display:block;width:100%;height:100%;}
+  .hdrgreen{background:var(--green);border-radius:6px;overflow:hidden;position:relative;}
+  .hdrgreen .band{padding:9px 10px 10px;text-align:center;position:relative;}
+  .hdrgreen .gco{position:absolute;width:60px;height:60px;border-radius:50%;background:rgba(127,166,83,.16);top:-22px;right:-18px;z-index:0;}
+  .hdrgreen .eyebrow{position:relative;z-index:2;font-size:6px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--teal);}
+  .hdrgreen h3{position:relative;z-index:2;font-size:18px;line-height:.9;font-weight:900;letter-spacing:-.02em;text-transform:uppercase;color:#fff;margin:3px 0 0;}
+  .hdrgreen h3 em{font-style:normal;color:var(--gold);}
+  .hdrgreen .rule{position:relative;z-index:2;margin:6px auto 0;width:36px;height:2px;border-radius:1px;background:var(--gold);}
+  .hdrgreen .wmwrap{position:relative;z-index:2;display:flex;justify-content:center;}
+  .hdrgreen .wmwrap svg{width:128px;height:auto;display:block;}
+
+  .gpanel{background:var(--green);color:var(--paper);position:relative;overflow:hidden;padding:10px 10px;border-radius:6px;}
+  .gpanel .gco{position:absolute;z-index:0;}
+  .gpanel .c1{width:80px;height:80px;border-radius:50%;background:rgba(127,166,83,.15);top:-24px;right:-26px;}
+  .gpanel .c2{width:40px;height:40px;background:rgba(6,61,42,.5);transform:rotate(45deg);bottom:-16px;left:-14px;}
+  .gpanel .lbl{position:relative;z-index:2;font-size:6px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--teal);}
+  .gpanel .big{position:relative;z-index:2;font-size:15px;font-weight:900;line-height:.95;text-transform:uppercase;letter-spacing:-.02em;color:#fff;margin:3px 0 0;}
+  .gpanel .big em{font-style:normal;color:var(--gold);}
+  .gpanel p{position:relative;z-index:2;font-size:7.5px;line-height:1.4;color:rgba(247,244,236,.92);margin:6px 0 0;}
+  .gpanel p b{color:var(--gold);}
+
+  .more{background:var(--paper);border-radius:6px;padding:9px 10px;}
+  .more p{font-size:7px;line-height:1.42;color:#33342c;margin:0;}
+  .more p b{color:var(--green);}
+  .more .free{display:inline-block;margin-top:6px;background:var(--gold);color:var(--forest);font-size:6px;font-weight:900;letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:3px;}
+
+  .caps{background:var(--forest);border-radius:6px;padding:9px 9px;}
+  .ct2{font-size:6.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--teal);text-align:center;margin-bottom:7px;}
+  .capgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;}
+  .cap{display:flex;flex-direction:column;align-items:center;gap:3px;}
+  .cap i{width:24px;height:24px;border-radius:5px;background:rgba(255,255,255,.07);border:1px solid rgba(242,180,23,.4);display:flex;align-items:center;justify-content:center;}
+  .cap i svg{width:13px;height:13px;}
+  .cap span{font-size:4.2px;letter-spacing:.005em;text-transform:uppercase;font-weight:700;color:rgba(247,244,236,.78);text-align:center;line-height:1.15;word-break:break-word;hyphens:auto;}
+
+  .flow{background:var(--paper);border-radius:6px;padding:9px 9px;}
+  .ft{font-size:6.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--green);text-align:center;margin-bottom:8px;}
+  .steps{display:flex;gap:4px;}
+  .step{flex:1;text-align:center;position:relative;}
+  .step .n{width:16px;height:16px;border-radius:50%;background:var(--gold);color:var(--forest);font-size:8px;font-weight:900;display:flex;align-items:center;justify-content:center;margin:0 auto 4px;}
+  .step h4{font-size:7px;font-weight:900;text-transform:uppercase;letter-spacing:-.01em;color:var(--forest);margin:0;line-height:1;}
+  .step p{font-size:5.5px;color:#56564c;line-height:1.2;margin:3px 0 0;}
+  .step .arr{position:absolute;top:7px;right:-4px;color:#c9a23a;font-size:10px;font-weight:900;}
+
+  .qrow{background:var(--green);border-radius:6px;padding:9px 10px;display:flex;align-items:center;gap:9px;position:relative;overflow:hidden;}
+  .qrow .qco{position:absolute;width:60px;height:60px;border-radius:50%;background:rgba(127,166,83,.13);top:-20px;right:-18px;z-index:0;}
+  .qr{flex:0 0 auto;background:#fff;border:1.5px solid var(--gold);border-radius:3px;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);padding:2px;gap:1px;position:relative;z-index:2;}
+  .qr.s{width:36px;height:36px;} .qr.m{width:40px;height:40px;}
+  .qr i{background:var(--forest);border-radius:1px;} .qr i.o{background:transparent;}
+  .qrow .qt{position:relative;z-index:2;font-size:7.5px;font-weight:700;color:#fff;line-height:1.35;}
+  .qrow .qt b{color:var(--gold);display:block;font-size:8.5px;margin-top:1px;}
+  .qrow .qt small{color:var(--teal);font-size:6px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+
+  .calwrap{position:relative;z-index:5;display:flex;justify-content:center;}
+  .holder{position:relative;width:108px;background:#fff;border-radius:3px;padding:6px 6px 8px;box-shadow:0 5px 12px rgba(50,32,10,.32), inset 0 0 0 1px rgba(0,0,0,.08);}
+  .holder::before,.holder::after{content:'';position:absolute;top:-3px;width:22px;height:6px;border-radius:2px;background:#cfcaba;z-index:6;}
+  .holder::before{left:16px;} .holder::after{right:16px;}
+  .sheet{aspect-ratio:8.5/11;display:flex;flex-direction:column;background:#fff;}
+  .sheet .sct{font-size:6.5px;font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:var(--green);text-align:center;margin:1px 0 1px;}
+  .sheet .csub{font-size:4.5px;letter-spacing:.04em;text-transform:uppercase;color:#a8a496;text-align:center;margin-bottom:3px;}
+  .gcal{flex:1;display:flex;flex-direction:column;gap:1px;}
+  .gcal .gday{flex:1;display:flex;gap:2px;align-items:stretch;}
+  .gcal .gd{flex:0 0 13px;font-size:4.5px;font-weight:800;color:#8a8a7d;text-transform:uppercase;display:flex;align-items:center;}
+  .gcal .gevs{flex:1;display:flex;flex-direction:column;gap:.5px;justify-content:center;}
+  .gcal .ev{font-size:4px;font-weight:700;line-height:1.1;border-radius:1px;padding:.5px 1.5px;color:#fff;overflow:hidden;white-space:nowrap;}
+  .ev.r{background:var(--gold);color:#5e4505;} .ev.t{background:var(--teal);color:#0c4a45;} .ev.s{background:var(--sage);color:#21380f;} .ev.g{background:var(--green);}
+  .gcal .gday + .gday{border-top:.5px solid #eee;}
+  .ckey{display:flex;gap:4px;justify-content:center;margin-top:3px;font-size:4px;color:#6a6a5e;}
+  .ckey i{width:5px;height:5px;border-radius:1px;display:inline-block;vertical-align:-1px;margin-right:1.5px;}
+
+  .wb{background:#fbfbf9;border-radius:5px;position:relative;box-shadow:inset 0 0 0 2px #cfcabd;aspect-ratio:24/18;padding:9px 9px 0;display:flex;flex-direction:column;}
+  .wb .tab{position:absolute;top:-6px;left:50%;transform:translateX(-50%);background:var(--forest);color:#fff;font-size:5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;padding:1.5px 7px;border-radius:0 0 3px 3px;z-index:8;}
+  .wb .dim{position:absolute;top:4px;right:6px;font-size:4.5px;font-weight:700;color:#bdb8a8;}
+  .wb .scrawl{font-size:9px;color:#2f6aa0;font-weight:600;line-height:1.3;font-family:'Bradley Hand','Segoe Print',cursive;}
+  .wb .scrawl small{display:block;font-size:7px;color:#cf5a3a;margin-top:4px;}
+  .wb .scrawl .gr{display:block;font-size:7px;color:#3f8a4a;margin-top:3px;}
+  .wb .tray{position:absolute;left:9px;right:9px;bottom:4px;height:3px;border-radius:2px;background:#e3ded0;}
+  .wb .marker{position:absolute;bottom:7px;width:15px;height:4px;border-radius:2px;}
+  .wb .marker.o{right:11px;background:#d85a30;} .wb .marker.g{right:30px;background:var(--green);} .wb .marker.b{right:49px;background:#3f7fb0;}
+
+  .info{background:var(--forest);border-radius:5px;padding:9px 9px;position:relative;overflow:hidden;}
+  .info .ih{position:relative;z-index:2;font-size:6px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--teal);margin-bottom:6px;text-align:center;}
+  .info .ir{display:flex;gap:6px;position:relative;z-index:2;}
+  .info .ir + .ir{margin-top:5px;}
+  .info .pill{flex:0 0 auto;font-size:5.5px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;padding:2px 5px;border-radius:3px;height:fit-content;}
+  .info .pill.gold{background:var(--gold);color:var(--forest);} .info .pill.teal{background:var(--teal);color:#06403b;}
+  .info p{font-size:6.5px;line-height:1.34;color:rgba(247,244,236,.92);margin:0;}
+  .info p b{color:var(--gold);}
+
+  .posters{display:grid;grid-template-columns:1fr 1fr;gap:7px;position:relative;z-index:5;}
+  .poster{aspect-ratio:11/17;border-radius:4px;box-shadow:0 3px 8px rgba(50,32,10,.34);overflow:hidden;position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:6px 6px 5px;}
+  .poster.p1{background:var(--forest);} .poster.p2{background:var(--teal);}
+  .poster .pdate{font-size:5.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--gold);margin-top:5px;}
+  .poster.p2 .pdate{color:#06403b;}
+  .poster .pband{height:6px;border-radius:2px;background:var(--gold);width:60%;margin-top:3px;}
+  .poster.p2 .pband{background:var(--forest);}
+  .poster .ph{font-size:9px;font-weight:900;line-height:.95;text-transform:uppercase;color:#fff;}
+  .poster.p2 .ph{color:var(--forest);}
+  .poster .pq{width:11px;height:11px;border:1.5px solid var(--gold);border-radius:2px;align-self:flex-end;}
+  .poster.p2 .pq{border-color:var(--forest);}
+
+  .sectionhdr{display:flex;align-items:center;gap:6px;background:var(--forest);border-radius:5px;padding:6px 9px;margin-bottom:11px;position:relative;}
+  .sectionhdr .dotlive{width:7px;height:7px;border-radius:50%;background:var(--gold);box-shadow:0 0 0 2px rgba(242,180,23,.28);flex:0 0 auto;}
+  .sectionhdr .sht{font-size:7.5px;font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:#fff;line-height:1;}
+  .sectionhdr .shsub{margin-left:auto;font-size:5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);}
+  .plaquerow{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+  .rowrail{position:absolute;top:-5px;left:4px;right:4px;height:3px;border-radius:2px;background:rgba(90,60,25,.32);z-index:4;}
+  .rowrail::before,.rowrail::after{content:'';position:absolute;top:-1.5px;width:5px;height:5px;border-radius:50%;border:1px solid rgba(90,60,25,.45);}
+  .rowrail::before{left:-2px;} .rowrail::after{right:-2px;}
+  .plaque{aspect-ratio:1/1;border-radius:4px;overflow:hidden;position:relative;box-shadow:0 3px 8px rgba(50,32,10,.34);background:var(--green);display:flex;flex-direction:column;}
+  .plaque .pat{position:absolute;inset:0;z-index:0;opacity:.24;}
+  .plaque .pat svg{width:100%;height:100%;display:block;}
+  .plaque .inner{position:relative;z-index:2;flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;padding:6px 3px 5px;}
+  .plaque .photo{width:26px;height:26px;border-radius:4px;flex:0 0 auto;background:var(--forest);border:2px solid #fff;display:flex;align-items:center;justify-content:center;position:relative;}
+  .plaque .photo .ph-init{font-size:10px;font-weight:900;color:var(--teal);}
+  .plaque .photo .tape{position:absolute;top:-3px;left:50%;transform:translateX(-50%) rotate(-4deg);width:13px;height:6px;background:rgba(242,180,23,.6);}
+  .plaque .pname{font-size:7px;font-weight:900;line-height:.96;text-transform:uppercase;letter-spacing:-.01em;color:#fff;margin-top:5px;}
+  .plaque .ppill{display:inline-block;margin-top:3px;background:var(--gold);color:var(--forest);font-size:4.5px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;padding:1px 4px;border-radius:2px;}
+  .plaque .prole{font-size:5px;font-weight:700;color:var(--teal);margin-top:4px;line-height:1.2;}
+  .plaque .prole b{color:#fff;}
+  .empty{aspect-ratio:1/1;border-radius:4px;border:1.5px dashed rgba(90,60,25,.42);background:rgba(255,255,255,.05);position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .empty .ecleat{position:absolute;top:9px;left:9px;right:9px;height:3px;border-radius:2px;background:rgba(90,60,25,.34);}
+  .empty .eicon{width:15px;height:15px;border-radius:50%;border:1.5px dashed rgba(90,60,25,.5);display:flex;align-items:center;justify-content:center;color:rgba(90,60,25,.6);font-size:10px;font-weight:300;margin-top:6px;}
+  .empty .etxt{font-size:4.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:rgba(90,60,25,.62);text-align:center;margin-top:4px;}
+  /* standalone plaque/empty piece keeps a wood-ish backdrop so the dashed cleat reads */
+  .frame.plaquepiece{background:#e3c08c;border-radius:6px;padding:5px;}
+
+  .train{background:var(--paper);border-radius:6px;padding:9px 9px;display:flex;align-items:center;gap:8px;}
+  .train .tinfo{flex:1;}
+  .train .tlbl{font-size:5px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--green);}
+  .train .tbig{font-size:11px;font-weight:900;line-height:.98;text-transform:uppercase;letter-spacing:-.01em;color:var(--forest);margin:2px 0 0;}
+  .train p{font-size:6px;line-height:1.32;color:#56564c;margin:4px 0 0;}
+  .train p b{color:var(--green);}
+  .apron{width:9px;height:11px;flex:0 0 auto;}
+  .where{display:inline-flex;align-items:center;gap:5px;margin-top:7px;background:rgba(242,180,23,.14);border:1px solid rgba(242,180,23,.5);border-radius:4px;padding:3px 7px 3px 5px;position:relative;z-index:2;}
+  .where span{font-size:5.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#fff;}
+
+  .gap{position:relative;flex:1 1 auto;min-height:24px;display:flex;align-items:center;justify-content:center;}
+  .gap .ghost{font-size:5px;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:rgba(90,60,25,.3);transform:rotate(-90deg);white-space:nowrap;}
+
+  .lowband{background:var(--forest);border-radius:6px;overflow:hidden;position:relative;margin-bottom:8px;}
+  .lpat{display:flex;height:9px;background:var(--forest);}
+  .lpat .lt{width:9px;height:9px;flex:0 0 auto;overflow:hidden;}
+  .lpat .lt svg{display:block;width:100%;height:100%;}
+  .lowband .lin{padding:8px 10px 9px;display:flex;align-items:center;gap:10px;}
+  .lowband .lleft{flex:1;min-width:0;text-align:left;}
+  .lowband .lright{flex:0 0 auto;display:flex;align-items:center;}
+  .lowband .lwm{font-size:7.5px;font-weight:900;letter-spacing:.02em;text-transform:uppercase;color:#fff;}
+  .lowband .lwm span{color:var(--gold);}
+  .lowband .lwmmark{display:flex;justify-content:flex-end;}
+  .lowband .lwmmark svg{width:88px;height:auto;display:block;}
+  .lowband .lsoc{display:flex;gap:5px;justify-content:flex-start;}
+  .lowband .lsoc i{width:15px;height:15px;border-radius:3px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:7px;font-weight:700;font-style:normal;}
+  .lowband .lhrs{font-size:5.5px;color:rgba(255,255,255,.72);line-height:1.5;margin-top:5px;text-align:left;}
+  .lowband .lhrs b{color:#fff;font-weight:800;}
+  .lowband .ldiv{width:1px;align-self:stretch;background:rgba(255,255,255,.14);flex:0 0 auto;}
+
+  .ftr{background:var(--forest);border-radius:6px;overflow:hidden;border-top:2px solid var(--gold);}
+  .ftr .fin{padding:7px 9px 8px;text-align:center;}
+  .ftr .fmeta{font-size:5.5px;color:rgba(255,255,255,.64);line-height:1.5;}
+
+  /* real QR codes (replace the placeholder grids when a URL is set) */
+  .qrcode{flex:0 0 auto;background:#fff;border:1.5px solid var(--gold);border-radius:3px;padding:2px;position:relative;z-index:2;}
+  .qrcode.s{width:36px;height:36px;} .qrcode.m{width:40px;height:40px;}
+  .qrcode svg{display:block;width:100%;height:100%;}
+  .poster .pq.has{background:#fff;padding:1px;}
+  .poster .pq.has svg{display:block;width:100%;height:100%;}
+
+  /* all-three-faces overview */
+  .allfaces{display:flex;gap:16px;align-items:flex-start;padding:2px;}
+  .facecol{display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .facetitle{font-size:7px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#3a2c05;background:var(--gold);padding:2px 8px;border-radius:4px;white-space:nowrap;}
+
+  /* panels rendered standalone get a hair of breathing room */
+  .frame.panel{padding:0;}
+  @media (max-width:880px){ .app{grid-template-columns:1fr;grid-template-rows:52px auto 1fr;} .editor{max-height:38vh;} }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">Foundry <span>Kiosk</span> Editor</div>
+    <nav class="tabs" id="tabs">
+      <button class="tab" data-tab="s1">Side 1 · The Foundry</button>
+      <button class="tab" data-tab="s2">Side 2 · What's Happening</button>
+      <button class="tab" data-tab="s3">Side 3 · Need Help?</button>
+      <button class="tab" data-tab="all">All faces</button>
+      <button class="tab" data-tab="shared">Shared</button>
+    </nav>
+    <div class="spacer"></div>
+    <div class="meta" id="savestate">Saved locally</div>
+  </header>
+
+  <section class="editor" id="editor"></section>
+
+  <section class="right">
+    <div class="ctrl">
+      <label class="sel">Export target
+        <select id="target"></select>
+      </label>
+      <span class="dim-note" id="dimnote"></span>
+      <div class="spacer"></div>
+      <button class="btn ghost" id="exportbtn" title="Download all copy as JSON">Export</button>
+      <button class="btn ghost" id="importbtn" title="Load copy from a JSON file">Import</button>
+      <button class="btn ghost" id="resetbtn" title="Restore placeholder copy">Reset</button>
+      <button class="btn primary" id="printbtn">Print / Save PDF</button>
+    </div>
+    <div class="stage" id="stage"><div id="ptarget"></div></div>
+  </section>
+</div>
+<div id="printroot"></div>
+<input type="file" id="fileinput" accept="application/json" style="display:none">
+
+<!-- Real scannable QR codes. Local vendored MIT lib (Kazuhiko Arase), no build/network. -->
+<script src="vendor/qrcode-generator.js"></script>
+<script>
+/* ============================================================================
+   Foundry Kiosk Editor
+   Single-file, no build. Edit per-section copy on the left; preview on the right;
+   "Print / Save PDF" outputs the selected target at its exact real-world size.
+
+   PRINT TRICK: every face/piece is authored at the renders' design scale
+   (1 inch = 8.38 design px). For print we wrap the target in #printscale and set
+   CSS `zoom` so 8.38 design px -> 1 real inch, then size @page to the measured
+   box. Result: vector-sharp PDFs, true to size (26x84" face, 11x17" poster, etc.).
+   ============================================================================ */
+const PXIN = 8.38;                 // design px per inch (matches the spec renders)
+const PRINT_ZOOM = 96 / PXIN;      // design px -> CSS px so 1 design-inch = 1 real inch
+const STORE_KEY = 'foundry-kiosk-content-v1';
+
+/* ---- the real Foundry wordmark (vector). White as exported; recolour via wm(c) ---- */
+const WM_WHITE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 702.73 202.26"><path fill="none" stroke="#FFFFFF" stroke-miterlimit="10" stroke-width="3" d="M49.04 133.2V3.13h67.57v19.56H70.6v33.88h34.24v18.84H70.6v57.79z"/><g fill="none" stroke="#FFFFFF" stroke-miterlimit="10" stroke-width="3"><path d="M123.5 68.16c0-43.11 12.5-66.66 42.93-66.66s43.11 23.55 43.11 66.66-13.22 66.66-43.11 66.66-42.93-23.91-42.93-66.66Zm64.13 0c0-33.88-7.06-48-21.19-48s-21.01 14.13-21.01 48 7.61 48.19 21.01 48.19 21.19-13.04 21.19-48.19Z"/><path d="M284.73 3.13h21.19v88.58c0 28.08-12.32 42.93-40.4 42.93s-39.13-14.85-39.13-42.93V3.13h21.56v91.48c0 15.04 5.62 21.56 17.93 21.56s18.84-6.52 18.84-21.56V3.13Z"/><path d="m389.07 133.2-41.48-89.85h-.36v89.85h-19.2V3.13h24.82l35.69 78.98h.36V3.13h19.56V133.2h-19.38Z"/><path d="M431.1 133.2V3.13h29.89c35.87 0 52.35 18.12 52.35 63.58 0 42.75-14.49 66.48-52.72 66.48h-29.53Zm31.16-19.93c20.47 0 29.17-14.49 29.17-46.38s-9.6-43.84-28.62-43.84h-9.78v90.21h9.24Z"/><path d="m587.62 133.2-18.66-53.62h-16.49v53.62h-21.56V3.13h34.42c27.9 0 41.3 10.69 41.3 36.05 0 16.49-7.07 26.63-18.3 31.7l22.64 62.32H587.6Zm-22.83-71.92c9.78 0 19.93-3.44 19.93-20.11 0-18.3-10.33-19.38-20.11-19.38h-12.14v39.49z"/><path d="M646.31 133.2V80.67L614.25 3.13h22.83l19.75 52.9h.36l20.83-52.9h22.46l-32.61 77.53v52.53h-21.56Z"/></g><path fill="#FFFFFF" d="m26.89 117.42-18.18 3.05v.08l18.18 2.9v4.46l-26.7 5.35v-4.42l18.3-3.12v-.07l-18.3-3.06v-4.35l18.26-3.01v-.07L.19 112.03v-4.35l26.7 5.32z"/><g fill="#FFFFFF"><path d="M27.22 101.27c0 4.65-3.09 6.92-10.11 6.92-6.25 0-9.93-2.42-9.93-6.99 0-5.02 3.98-6.77 8.92-6.77.56 0 1.19 0 1.9.04v9.93c4.05-.15 5.95-1 5.95-3.31 0-1.79-1.23-2.75-3.24-3.31l.67-3.31c4.09 1.04 5.84 3.31 5.84 6.8m-12.09 3.09v-6.14c-2.86 0-4.8.89-4.8 2.97 0 1.93 1.71 2.9 4.8 3.16Z"/><path d="M4.39 91.42H0v-4.09h4.39zm22.5-.08H7.55V87.4h19.34z"/><path d="M12.68 75.68c-1.75.63-2.38 1.49-2.38 2.83s.78 2.08 1.9 2.08c3.53 0 2.86-8.52 9.52-8.52 3.53 0 5.5 2.38 5.5 6.25s-1.56 5.47-5.02 6.4l-.89-3.24c1.93-.67 2.83-1.52 2.83-3.2 0-1.45-.78-2.42-2.08-2.42-4.09 0-3.31 8.4-9.67 8.4-3.12 0-5.21-2.19-5.21-5.73s1.6-5.17 4.65-5.99l.85 3.12Z"/><path d="M12.68 61.51c-1.75.63-2.38 1.49-2.38 2.83s.78 2.08 1.9 2.08c3.53 0 2.86-8.52 9.52-8.52 3.53 0 5.5 2.38 5.5 6.25s-1.56 5.47-5.02 6.4l-.89-3.24c1.93-.67 2.83-1.52 2.83-3.2 0-1.45-.78-2.42-2.08-2.42-4.09 0-3.31 8.4-9.67 8.4-3.12 0-5.21-2.19-5.21-5.73s1.6-5.17 4.65-5.99l.85 3.12Z"/><path d="M26.89 37.6H13.76c-2.16 0-2.83.78-2.83 1.82s.63 2.01 1.82 2.97h14.13v3.94H13.9c-2.04 0-2.97.45-2.97 1.75 0 1.04.78 2.12 1.97 3.05h13.98v3.94H7.55v-3.83h2.27c-1.67-1.45-2.64-3.05-2.64-4.87 0-1.93.97-3.05 2.64-3.57-1.75-1.56-2.64-3.05-2.64-4.98 0-3.09 2.34-4.13 5.95-4.13h13.76v3.9Z"/><path d="m26.89 21.16-2.05.22c1.56 1.52 2.38 3.24 2.38 5.24 0 2.71-1.86 4.35-5.09 4.35-2.19 0-3.87-.78-5.09-2.45-1.15-1.49-1.97-3.94-2.86-6.95-2.53-.22-3.76.33-3.76 2.31 0 1.64.97 2.57 2.68 3.12l-.78 3.2c-3.12-.86-5.13-2.75-5.13-6.54 0-4.2 2.01-5.95 6.1-5.95h9.97l3.64-.3v3.76Zm-9.93.52c.6 2.12 1.08 3.31 1.79 4.16.63.78 1.64 1.08 2.79 1.08 1.45 0 2.38-.63 2.38-1.9s-.71-2.49-1.86-3.35h-5.09Z"/><path d="M26.89 4.72H13.91c-2.12 0-2.97.63-2.97 2.01 0 1.04.56 2.04 1.93 3.24h14.02v3.94H7.55v-3.83h2.31c-1.78-1.6-2.68-3.09-2.68-5.06 0-1.64.63-2.83 1.75-3.42 1-.63 2.42-.78 4.54-.78h13.42v3.91Z"/></g><g fill="#FFFFFF"><path d="M312.25 177.78c2.7-1.54 4.53-3.64 5.04-6.58.29-1.72.24-3.55.09-5.33-.33-4.55-2.83-7.7-6.97-8.86-1.2-.33-2.46-.56-3.71-.58-4.15-.07-8.32-.04-12.48-.05-.11 0-.22.07-.22.07v45.05h8.57c2.03-.02 4.09.04 6.11-.2 4.47-.53 7.61-2.88 8.93-7.26.43-1.43.69-2.97.76-4.47.29-5.04-.91-9.38-6.11-11.79Zm-10.56-14.98c2.46.14 5.24-.71 6.81 1.88 1.47 2.39 1.81 5.11.42 7.66-1.58 2.88-4.42 2.63-7.23 2.46v-12.01Zm8.47 28.5c-.47 2.1-1.78 3.46-3.97 3.68-1.49.14-2.97.02-4.51.02v-13.68c1.99-.04 3.99-.25 5.87.62 1.52.71 2.3 1.96 2.66 3.51.43 1.96.4 3.91-.05 5.85"/><path d="M462.83 156.44v45.07c-2.14 0-4.24 0-6.32-.04-.24 0-.56-.36-.67-.63-2.25-6.34-4.47-12.68-6.7-19.04-.89-2.54-1.78-5.05-2.68-7.59-.07-.2-.14-.42-.22-.62-.05 0-.11.02-.14.02v27.84h-6.99v-45.07c2.28 0 4.55-.02 6.81.04.24 0 .54.47.65.8 2.14 5.74 4.24 11.5 6.34 17.28.82 2.19 1.63 4.4 2.45 6.61.09.25.2.47.45.69v-25.36h7.03Z"/><path d="M376.05 185.25c-.34-1.97-1.11-3.8-2.57-5.18-.94-.89-2.07-1.59-3.12-2.39.13-.09.34-.24.58-.38 2.36-1.5 3.95-3.62 4.31-6.39.24-1.79.2-3.7-.04-5.51-.47-3.93-2.39-6.96-6.36-8.17-1.68-.53-3.51-.74-5.27-.8-3.61-.13-7.19-.04-10.78-.04-.29 0-.58.02-.89.04v45.09h8.44c2.08-.04 4.2.04 6.27-.22 4.4-.51 7.46-2.84 8.86-7.12.94-2.92 1.09-5.91.56-8.93Zm-16.34-22.45c2.39.13 4.93-.6 6.74 1.7 1.38 1.74 1.67 5.89.56 7.77-1.68 2.88-4.46 2.7-7.3 2.54zm8.35 28.53c-.4 2.32-1.97 3.55-4.31 3.71-1.3.07-2.63 0-4.04 0v-13.82c1.38.05 2.74.02 4.06.22 2.64.38 4.22 1.9 4.47 4.57.16 1.76.13 3.59-.18 5.33Z"/><path d="M432.57 166.08c-.2-4.86-3.19-8.68-7.77-9.76-1.78-.43-3.68-.53-5.51-.45-6.05.25-10.24 4.46-10.42 10.49-.13 4.2-.04 8.41-.04 12.63h.04c0 4.31-.16 8.64.04 12.97.2 4.17 2.21 7.37 6.16 9.13 1.7.74 3.5 1.01 5.34 1.03 2.77.04 5.43-.4 7.75-2.03 3.21-2.26 4.42-5.53 4.44-9.29.04-5.31.02-10.63.02-15.94 0-2.92.07-5.85-.05-8.77Zm-7.68 24.42c-.02.85-.14 1.72-.34 2.55-.29 1.14-1.09 1.9-2.23 2.08-.98.14-2.03.18-3.03.02-1.47-.24-2.23-1.29-2.48-2.7-.13-.72-.2-1.49-.2-2.23-.02-7.55-.02-15.09 0-22.64.02-.92.13-1.85.36-2.74.33-1.27 1.23-2.01 2.54-2.21.38-.05.78-.13 1.16-.13 2.7-.04 4.13 1.2 4.18 3.89.07 4.18.02 8.37.02 12.54h.02c0 3.86.04 7.7 0 11.56Z"/><path d="M537.12 166.19c-.05-3.53-1.56-6.54-4.64-8.53-2.81-1.81-5.94-2.08-9.17-1.78-5.65.54-9.6 4.47-9.84 10.11-.2 4.31-.04 8.64-.04 12.97h-.07v11.99c0 .4.05.78.09 1.16.36 3.62 1.88 6.58 5.13 8.44 2.63 1.5 5.51 1.7 8.44 1.49 5.76-.42 10-4.57 10.11-10.27.14-8.51.13-17.07-.02-25.58Zm-7.64 9.09v3.68h-.02c0 4.08.02 8.17 0 12.25 0 .65-.2 1.3-.36 1.94-.07.31-.24.62-.43.87-1.27 1.54-2.99 1.47-4.69 1.18-1.5-.25-2.32-1.29-2.57-2.74-.11-.62-.18-1.25-.18-1.87v-23.55c.05-3.64 1.87-5.07 5.67-4.35 1.61.31 2.54 1.68 2.59 3.82.05 2.92.04 5.83.04 8.77h-.04Z"/><path d="M642.5 178.65v22.88c-1.16 0-2.32.04-3.46 0-.18 0-.4-.31-.51-.53-.4-.85-.76-1.74-1.16-2.7-.34.36-.62.71-.92 1.01-2.72 2.84-6.09 3.39-9.75 2.52s-5.96-3.3-7.01-6.85c-.36-1.25-.58-2.57-.58-3.88-.05-8.08-.04-16.16-.02-24.26 0-5.13 2.81-9.24 7.36-10.47 4.58-1.27 8.93-.82 12.46 2.77 2.12 2.17 2.99 4.93 3.19 7.88.09 1.3 0 2.61 0 3.97h-7.3c-.14-1.49-.24-2.93-.43-4.38-.09-.67-.31-1.34-.56-1.96-.65-1.52-1.97-2.21-3.8-2.08-1.5.13-2.43.91-2.86 2.54-.16.69-.27 1.41-.27 2.12q-.03 11.76 0 23.55c0 .4.02.83.09 1.23.42 2.74 2.23 3.89 4.91 3.19 1.01-.27 1.78-.89 2.12-1.88.25-.69.4-1.43.53-2.16.09-.47.07-.96.07-1.43v-5.04h-4.82v-6.03h12.72l.02-.02Z"/><path d="M339.11 156.42h-9.69c-2.79 15.02-5.56 30.02-8.35 45.05h7.54c.47-3.32.94-6.61 1.41-9.96 2.55 0 5.04.04 7.52-.02.76-.02 1.01.22 1.11.98.36 2.99.8 5.96 1.23 9h7.59c-2.79-15.05-5.56-30.04-8.35-45.05Zm-7.97 28.35c1.01-6.39 2.01-12.72 3.01-19.02h.16c1 6.3 1.99 12.61 3.01 19.04h-6.18z"/><path d="M506.98 195.5c-1.32 3.44-3.82 5.54-7.41 6.38-2.55.58-5.11.49-7.63-.22-4.62-1.32-7.55-5.27-7.57-10.34-.05-8.21-.05-16.41 0-24.62.04-6.2 4.37-10.56 10.56-10.87 1.94-.11 3.84-.04 5.67.63 3.99 1.45 6.14 4.46 6.87 8.46.38 2.1.31 4.26.45 6.47h-8.03v-1.45c-.09-1.39-.02-2.83-.31-4.18-.53-2.63-2.68-3.75-5.24-2.88-1.52.51-2.05 1.74-2.25 3.17-.09.67-.11 1.36-.11 2.05v21.85c0 .89.04 1.79.24 2.66.45 2.16 1.85 3.01 4.47 2.83 1.83-.13 2.97-1.27 3.1-3.3.11-1.85.07-3.7.09-5.54v-1.12h7.92c-.13 3.39.42 6.78-.83 10.04Z"/><path d="M403.82 192.98c-.72 4.67-4.18 8.1-9.08 8.88-2.01.33-4.04.43-6.05-.11-4.62-1.23-7.07-4.51-8.19-8.95-.27-1.01-.34-2.08-.53-3.19 2.57-.38 4.98-.72 7.34-1.05.33 1.29.51 2.54.92 3.7.89 2.45 2.75 3.5 5.11 3.03 1.87-.36 3.15-1.87 3.21-3.77.09-2.07-.58-3.93-1.97-5.4-1.61-1.72-3.37-3.3-5.14-4.86-2.21-1.92-4.47-3.79-6.14-6.23-2.46-3.59-3.08-7.54-2.05-11.68 1.03-4.18 3.97-6.47 8.08-7.28 1.92-.4 3.88-.53 5.8-.11 4.69 1.03 7.05 4.26 8.15 8.66.16.65.24 1.32.36 2.08-2.48.29-4.87.56-7.3.83-.2-.8-.34-1.56-.6-2.28-.63-1.72-1.94-2.66-3.64-2.68-2.23-.02-3.62 1.3-3.86 3.73-.2 1.97.51 3.7 1.83 5.07 1.63 1.72 3.46 3.28 5.18 4.93 1.87 1.81 3.84 3.51 5.53 5.49 2.72 3.21 3.7 7.01 3.04 11.2Z"/><path d="M601.78 163.16v11.56h9.96v6.81h-9.96v13.14h12.02v6.79h-19.89v-45.02h19.91v6.72z"/><path d="M656.7 163.18v11.52h9.88v6.81h-9.88v13.16h11.94v6.81H648.8v-45.04h19.88v6.74z"/><path d="M563.19 194.72v6.72h-19.93v-45.02h7.72v38.3z"/><path d="M588.66 194.68v6.76h-19.95v-45.02h7.76v38.26z"/></g><path fill="#FFFFFF" d="M280.3 193.99c-4.22 2.87-9.34 3.75-14.62 3.75-11.69 0-18.73-7.08-18.73-17.65 0-11.29 6.89-20.42 20.07-20.42 10.46 0 17.29 5.44 17.29 15.34 0 7.9-4.96 13.6-11.26 13.6-1.81 0-3.74-.46-4.48-2.82h-.11c-1.71 1.8-3.9 2.82-6.35 2.82-4.7 0-6.62-3.69-6.62-7.65 0-5.8 4.22-12.93 10.84-12.93 2.67 0 4.64.77 5.87 3.03l1.17-2.16h2.99l-4 13.03c-.37 1.13-.69 3.34 1.39 3.34 4.16 0 6.94-4.41 6.94-10.26 0-8.11-5.28-12.16-13.66-12.16-11.58 0-16.44 7.65-16.44 17.24 0 8.62 5.71 14.47 15.11 14.47 4.96 0 9.29-1.08 12.65-3.49l1.98 2.92Zm-9.87-18.74c0-2.36-1.23-4-4-4-4.8 0-7.05 5.64-7.05 9.6 0 2.98 1.28 4.46 3.42 4.46 4.96 0 7.63-6.26 7.63-10.06"/></svg>`;
+function wm(color){ return WM_WHITE.split('#FFFFFF').join(color); }
+
+/* ---- pattern motif tiles (header / footer strips) ---- */
+const MOTIFS = [
+  () => `<rect width="20" height="20" fill="#f2b417"/><polygon points="0,0 20,0 0,20" fill="#0d5b3e"/>`,
+  () => `<rect width="20" height="20" fill="#6cc5c0"/><circle cx="10" cy="10" r="6.5" fill="#063d2a"/>`,
+  () => `<rect width="20" height="20" fill="#063d2a"/><polygon points="20,0 20,20 0,20" fill="#f2b417"/>`,
+  () => `<rect width="20" height="20" fill="#7fa653"/><rect x="6" y="6" width="8" height="8" fill="#f2b417"/>`,
+  () => `<rect width="20" height="20" fill="#6cc5c0"/><polygon points="0,0 20,0 0,20" fill="#063d2a"/>`,
+  () => `<rect width="20" height="20" fill="#0d5b3e"/><circle cx="10" cy="10" r="6.5" fill="#f2b417"/>`,
+  () => `<rect width="20" height="20" fill="#f2b417"/><polygon points="0,0 20,0 20,20" fill="#7fa653"/>`,
+  () => `<rect width="20" height="20" fill="#063d2a"/><rect x="6" y="6" width="8" height="8" fill="#6cc5c0"/>`,
+  () => `<rect width="20" height="20" fill="#7fa653"/><polygon points="20,0 20,20 0,20" fill="#0d5b3e"/>`,
+  () => `<rect width="20" height="20" fill="#f2b417"/><circle cx="10" cy="10" r="6.5" fill="#6cc5c0"/>`,
+];
+function strip(cls, n, off){
+  let h=''; for(let i=0;i<n;i++){ h+=`<div class="${cls}"><svg viewBox="0 0 20 20" preserveAspectRatio="xMidYMid slice">${MOTIFS[(i+off)%MOTIFS.length]()}</svg></div>`; }
+  return h;
+}
+/* ---- capability icons (index-aligned to s1.caps) ---- */
+const ICONS = [
+  '<rect stroke="#f2b417" stroke-width="2.1" x="5" y="9" width="14" height="8" rx="1"/><path stroke="#f2b417" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" d="M7 9V4h10v5M8 17v3h8v-3"/>',
+  '<rect stroke="#f2b417" stroke-width="2.1" x="4" y="3" width="16" height="5" rx="1"/><path stroke="#f2b417" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" d="M9 8l-1 4h8l-1-4M12 12v5"/><path stroke="#f2b417" stroke-width="2.1" stroke-linecap="round" d="M10.5 19.5h3"/>',
+  '<path stroke="#f2b417" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" d="M9 3l3 3 3-3M9 3L5 7l2.5 2.5L9 8v13h6V8l1.5 1.5L19 7l-4-4"/>',
+  '<path stroke="#f2b417" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path stroke="#f2b417" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>',
+  '<path stroke="#f2b417" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" d="M7 14a4 4 0 01-1-7.9 4 4 0 017.7-1.2A4 4 0 0117 14M7 14h10v4a1 1 0 01-1 1H8a1 1 0 01-1-1v-4z"/>',
+];
+const APRON = '<svg class="apron" viewBox="0 0 15 17"><path d="M5.5 1.5 L7.5 3.5 L9.5 1.5" fill="none" stroke="#f2b417" stroke-width="1.3" stroke-linecap="round"/><path d="M5.5 1.5 C3 2.5 3 5 4 6 L3 14 C3 15.5 4 16 7.5 16 C11 16 12 15.5 12 14 L11 6 C12 5 12 2.5 9.5 1.5" fill="#f2b417" stroke="#c99513" stroke-width="0.6"/><line x1="4" y1="9" x2="11" y2="9" stroke="#c99513" stroke-width="0.6"/></svg>';
+const SCOUT_PAT = [
+  '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice"><rect width="100" height="100" fill="#0d5b3e"/><polygon points="0,0 50,0 0,50" fill="#063d2a"/><circle cx="78" cy="26" r="20" fill="#0a4e36"/><rect x="20" y="62" width="24" height="24" fill="#0a4e36"/></svg>',
+  '<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice"><rect width="100" height="100" fill="#0d5b3e"/><polygon points="100,0 50,0 100,50" fill="#063d2a"/><circle cx="24" cy="28" r="18" fill="#0a4e36"/><rect x="58" y="62" width="24" height="24" fill="#0a4e36"/></svg>',
+];
+const QR_OFF = new Set([1,5,7,8,13,16,17,19,22]);
+function qrGrid(size){
+  let cells=''; for(let i=0;i<25;i++){ cells+=`<i class="${QR_OFF.has(i)?'o':''}"></i>`; }
+  return `<div class="qr ${size}">${cells}</div>`;
+}
+// Real, scannable QR as an SVG (forest modules on white) from `url`. 4-module quiet zone.
+function qrSVG(url){
+  const q=qrcode(0,'M'); q.addData(String(url)); q.make();
+  const n=q.getModuleCount(), pad=4, dim=n+pad*2;
+  let d='';
+  for(let r=0;r<n;r++){ for(let c=0;c<n;c++){ if(q.isDark(r,c)) d+=`M${c+pad} ${r+pad}h1v1h-1z`; } }
+  return `<svg viewBox="0 0 ${dim} ${dim}" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg"><path fill="#063d2a" d="${d}"/></svg>`;
+}
+// QR tile that matches the .qr styling; falls back to the placeholder grid if blank/invalid.
+function qrBox(size, url){
+  url=(url==null?'':String(url)).trim();
+  if(!url) return qrGrid(size);
+  try{ return `<div class="qrcode ${size}">${qrSVG(url)}</div>`; }
+  catch(e){ return qrGrid(size); }
+}
+
+/* ============================ default content ============================ */
+function defaults(){ return {
+  global:{
+    hours:"**Mon–Fri** 10a–9p · **Sat–Sun** 12–8p",
+    social:"IG, in, @",
+    address:"9 Map Hill Drive, Wellesley MA 02482 · foundryinfo@babson.edu",
+  },
+  s1:{
+    eyebrow:"An open-door prototyping hub",
+    heroLabel:"Where your ideas become reality",
+    heroTitle:"Bring your\n*idea* to life",
+    heroBody:"A prototyping hub where students, faculty & staff from Babson, Olin & Wellesley come together to design, build, and bring ideas to life. **You always had the spark.**",
+    moreBody:"10,000 sq ft of **woodshop, 3D printing & electronics, textiles, digital fabrication, and a kitchen** — plus it's the home of The Generator, Babson's AI lab.",
+    moreBadge:"All free to the BOW community",
+    capsTitle:"Go beyond the expected",
+    caps:["Woodshop","Digital Fabrication","Fashion & Textiles","3D Printing & Electronics","Kitchen"],
+    flowTitle:"From concept to product",
+    steps:[{h:"Bring it",p:"Any idea"},{h:"Learn it",p:"Get trained"},{h:"Make it",p:"Build it"}],
+    qrSmall:"New here?",
+    qrTitle:"Get started",
+    qrUrl:"babson.edu/foundry",
+  },
+  s2:{
+    eyebrow:"This week in the space",
+    title:"What's\n*Happening*",
+    calWeekOf:"Week of Mar 3",
+    calSub:"all spaces",
+    cal:[
+      {d:"Mon",lines:"r:9a Wood hold\nt:2p FME"},
+      {d:"Tue",lines:"t:11a Laser 101"},
+      {d:"Wed",lines:"r:9a Reserved\nr:3p Reserved"},
+      {d:"Thu",lines:"g:Laser closed"},
+      {d:"Fri",lines:"s:5p Screen print"},
+      {d:"Sat",lines:"s:12p Open Build"},
+      {d:"Sun",lines:"t:1p Textiles"},
+    ],
+    wbMain:"Welcome, BOW Fashion crew! ★",
+    wbNote:"Laser closed Thurs — maint.",
+    wbGood:"Free coffee in the kitchen →",
+    infoTitle:"Using the space",
+    info:[
+      {pill:"Reserve",cls:"gold",p:"Book ahead at **weissmanfoundry.org** — studios, classrooms, collab areas."},
+      {pill:"Drop in",cls:"teal",p:"Most spaces welcome drop-ins when open & unbooked. Just show up."},
+    ],
+    posters:[
+      {date:"Fri Mar 7",title:"Screen\nPrinting",qrUrl:""},
+      {date:"Sat Mar 8",title:"Open\nBuild",qrUrl:""},
+    ],
+  },
+  s3:{
+    eyebrow:"Stuck? We've got you",
+    title:"Need\n*Help?*",
+    heroLabel:"Start here",
+    heroTitle:"Find a *Scout*",
+    heroBody:"Trained students who unlock tools and get you started on any machine. **No appointment** — just ask.",
+    whereCue:"Look for a yellow apron",
+    shiftTitle:"Scouts on shift today",
+    shiftSub:"8×8″ · shared cleat",
+    scouts:[
+      {init:"AR",name:"Avery R.",role:"Woodshop"},
+      {init:"JL",name:"Jordan L.",role:"Textiles"},
+      {init:"",name:"",role:""},
+    ],
+    trainLabel:"Use a machine?",
+    trainTitle:"Get trained",
+    trainBody:"Free weekly trainings. **Sign up online** — a Scout certifies you.",
+    trainQrUrl:"babson.edu/foundry/trainings",
+  },
+};}
+
+/* ============================ state + persistence ============================ */
+let state = load();
+function load(){
+  const d=defaults();
+  try{
+    const saved=JSON.parse(localStorage.getItem(STORE_KEY)||'null');
+    if(saved) return deepMerge(d, saved);
+  }catch(e){}
+  return d;
+}
+function deepMerge(base, over){
+  if(Array.isArray(base)){ return Array.isArray(over)? over.map((v,i)=> (v&&typeof v==='object')? deepMerge(base[i]??{}, v): v) : base; }
+  if(base && typeof base==='object'){
+    const out={...base};
+    for(const k in over){ out[k] = (base[k]&&typeof base[k]==='object'&&over[k]&&typeof over[k]==='object')? deepMerge(base[k], over[k]) : over[k]; }
+    return out;
+  }
+  return over;
+}
+let saveTimer=null;
+function persist(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    const el=document.getElementById('savestate'); el.textContent='Saved locally ✓';
+    setTimeout(()=>{ el.textContent='Saved locally'; },1200);
+  },180);
+}
+function get(path){ return path.split('.').reduce((o,k)=> (o==null?o:o[k]), state); }
+function set(path,val){
+  const parts=path.split('.'); let o=state;
+  for(let i=0;i<parts.length-1;i++){ o=o[parts[i]]; }
+  o[parts[parts.length-1]]=val;
+}
+
+/* ============================ text formatting ============================ */
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s){ return esc(s).replace(/"/g,'&quot;'); }
+// *gold emphasis*, **bold**, newlines -> <br>
+function fmt(s){
+  let t=esc(s);
+  t=t.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');
+  return t;
+}
+
+/* ============================ components ============================ */
+let S=null, G=null; // set per render
+function cHeader(side){
+  const off = side==='s1'?0 : side==='s2'?3 : 6;
+  const inner = side==='s1'
+    ? `<div class="wmwrap">${wm('#FFFFFF')}</div><div class="eyebrow" style="margin-top:9px;">${fmt(S.eyebrow)}</div>`
+    : `<div class="eyebrow">${fmt(S.eyebrow)}</div><h3>${fmt(S.title)}</h3>`;
+  return `<div class="hdrgreen"><div class="toprow">${strip('tt',24,off)}</div>
+    <div class="band"><div class="gco"></div>${inner}<div class="rule"></div></div></div>`;
+}
+function cHeroS1(){
+  return `<div class="gpanel"><div class="gco c1"></div><div class="gco c2"></div>
+    <div class="lbl">${fmt(S.heroLabel)}</div><div class="big">${fmt(S.heroTitle)}</div><p>${fmt(S.heroBody)}</p></div>`;
+}
+function cMore(){
+  return `<div class="more"><p>${fmt(S.moreBody)} <span class="free">${fmt(S.moreBadge)}</span></p></div>`;
+}
+function cCaps(){
+  const cells=S.caps.map((l,i)=>`<div class="cap"><i><svg viewBox="0 0 24 24" fill="none">${ICONS[i]||''}</svg></i><span>${esc(l)}</span></div>`).join('');
+  return `<div class="caps"><div class="ct2">${fmt(S.capsTitle)}</div><div class="capgrid">${cells}</div></div>`;
+}
+function cFlow(){
+  const steps=S.steps.map((s,i)=>`<div class="step"><div class="n">${i+1}</div><h4>${esc(s.h)}</h4><p>${esc(s.p)}</p>${i<S.steps.length-1?'<span class="arr">›</span>':''}</div>`).join('');
+  return `<div class="flow"><div class="ft">${fmt(S.flowTitle)}</div><div class="steps">${steps}</div></div>`;
+}
+function cQr(){
+  return `<div class="qrow"><div class="qco"></div>${qrBox('m', S.qrUrl)}<div class="qt"><small>${fmt(S.qrSmall)}</small><b>${fmt(S.qrTitle)}</b>${esc(S.qrUrl)}</div></div>`;
+}
+function parseEv(lines){
+  return String(lines||'').split('\n').filter(x=>x.trim()).map(line=>{
+    const m=line.match(/^\s*([rtsg])\s*:\s*(.*)$/i);
+    const cls=m?m[1].toLowerCase():'g'; const text=m?m[2]:line.trim();
+    return `<span class="ev ${cls}">${esc(text)}</span>`;
+  }).join('');
+}
+function cCalSheet(){
+  const days=S.cal.map(day=>`<div class="gday"><div class="gd">${esc(day.d)}</div><div class="gevs">${parseEv(day.lines)}</div></div>`).join('');
+  return `<div class="sheet"><div class="sct">${esc(S.calWeekOf)}</div><div class="csub">${esc(S.calSub)}</div>
+    <div class="gcal">${days}</div>
+    <div class="ckey"><span><i style="background:#f2b417"></i>Reserved</span><span><i style="background:#6cc5c0"></i>Class</span><span><i style="background:#7fa653"></i>Event</span></div></div>`;
+}
+function cCalendar(){ return `<div class="calwrap"><div class="holder">${cCalSheet()}</div></div>`; }
+function cWhiteboard(){
+  return `<div class="wb"><span class="tab">Whiteboard</span><span class="dim">24×18″</span>
+    <div class="scrawl">${esc(S.wbMain)}<small>${esc(S.wbNote)}</small><span class="gr">${esc(S.wbGood)}</span></div>
+    <span class="marker b"></span><span class="marker g"></span><span class="marker o"></span><span class="tray"></span></div>`;
+}
+function cInfo(){
+  const rows=S.info.map(r=>`<div class="ir"><span class="pill ${r.cls}">${esc(r.pill)}</span><p>${fmt(r.p)}</p></div>`).join('');
+  return `<div class="info"><div class="ih">${fmt(S.infoTitle)}</div>${rows}</div>`;
+}
+function cPoster(i){
+  const p=S.posters[i]; const cls=i===0?'p1':'p2';
+  const url=(p.qrUrl==null?'':String(p.qrUrl)).trim();
+  let pq='<div class="pq"></div>';
+  if(url){ try{ pq=`<div class="pq has">${qrSVG(url)}</div>`; }catch(e){} }
+  return `<div class="poster ${cls}"><div><div class="pdate">${esc(p.date)}</div><div class="pband"></div></div><div class="ph">${fmt(p.title)}</div>${pq}</div>`;
+}
+function cPosters(){ return `<div class="posters">${cPoster(0)}${cPoster(1)}</div>`; }
+function cHeroS3(){
+  return `<div class="gpanel"><div class="gco c1"></div><div class="gco c2"></div>
+    <div class="lbl">${fmt(S.heroLabel)}</div><div class="big">${fmt(S.heroTitle)}</div><p>${fmt(S.heroBody)}</p>
+    <div class="where">${APRON}<span>${esc(S.whereCue)}</span></div></div>`;
+}
+function plaque(i){
+  const sc=S.scouts[i]||{init:'',name:'',role:''};
+  if(!sc.name || !sc.name.trim()){
+    return `<div class="empty"><div class="ecleat"></div><div class="eicon">+</div><div class="etxt">Open</div></div>`;
+  }
+  return `<div class="plaque"><div class="pat">${SCOUT_PAT[i%2]}</div>
+    <div class="inner"><div class="photo"><span class="tape"></span><span class="ph-init">${esc(sc.init)}</span></div>
+    <div class="pname">${esc(sc.name)}</div><div class="ppill">Scout</div><div class="prole"><b>${esc(sc.role)}</b></div></div></div>`;
+}
+function cShift(){
+  return `<div><div class="sectionhdr"><span class="dotlive"></span><span class="sht">${fmt(S.shiftTitle)}</span><span class="shsub">${esc(S.shiftSub)}</span></div>
+    <div class="plaquerow"><div class="rowrail"></div>${plaque(0)}${plaque(1)}${plaque(2)}</div></div>`;
+}
+function cTrain(){
+  return `<div class="train"><div class="tinfo"><div class="tlbl">${fmt(S.trainLabel)}</div><div class="tbig">${fmt(S.trainTitle)}</div><p>${fmt(S.trainBody)}</p></div>${qrBox('s', S.trainQrUrl)}</div>`;
+}
+function cFooter(side){
+  const off = side==='s1'?1 : side==='s2'?4 : 7;
+  const chips=String(G.social).split(',').map(s=>`<i>${esc(s.trim())}</i>`).join('');
+  const right = side==='s2' ? `<div class="lwm">Weissman<br><span>Foundry</span></div>` : `<div class="lwmmark">${wm('#FFFFFF')}</div>`;
+  return `<div class="lowband"><div class="lpat">${strip('lt',24,off)}</div>
+    <div class="lin"><div class="lleft"><div class="lsoc">${chips}</div><div class="lhrs">${fmt(G.hours)}</div></div>
+    <div class="ldiv"></div><div class="lright">${right}</div></div></div>
+    <div class="ftr"><div class="fin"><div class="fmeta">${fmt(G.address)}</div></div></div>`;
+}
+
+/* ============================ faces ============================ */
+function mount(html, last){ return `<div class="mount"${last?'':' style="margin-bottom:8px;"'}>${html}</div>`; }
+function faceInner(side){
+  let body='';
+  if(side==='s1'){
+    body = mount(cHeader('s1')) + mount(cHeroS1()) + mount(cMore()) + mount(cCaps()) + mount(cFlow()) + mount(cQr(), true);
+  } else if(side==='s2'){
+    body = mount(cHeader('s2')) + `<div class="calwrap" style="margin-bottom:8px;"><div class="holder">${cCalSheet()}</div></div>`
+         + `<div class="mount" style="margin-bottom:8px;box-shadow:0 6px 14px rgba(50,32,10,.3);">${cWhiteboard()}</div>`
+         + mount(cInfo()) + `<div class="posters" style="margin-bottom:8px;">${cPoster(0)}${cPoster(1)}</div>`;
+  } else {
+    body = mount(cHeader('s3')) + mount(cHeroS3()) + `<div style="margin-bottom:8px;">${cShift()}</div>` + mount(cTrain(), true);
+  }
+  return body + `<div class="gap"><div class="ghost">Breathing room</div></div>` + cFooter(side);
+}
+function cFace(side){ return `<div class="ply">${faceInner(side)}</div>`; }
+
+/* ============================ export targets (face + pieces) ============================ */
+// w/h in inches. If h omitted, height is content-driven (aspect-ratio handles fixed pieces).
+function targetsFor(side){
+  const T=[{id:'face',label:`Whole face — 26×84″`}];
+  if(side==='s1') T.push(
+    {id:'header',label:'Header band',w:23,r:()=>cHeader('s1')},
+    {id:'hero',label:'Hero panel',w:23,r:cHeroS1},
+    {id:'more',label:'“What it is” panel',w:23,r:cMore},
+    {id:'caps',label:'Capabilities strip',w:23,r:cCaps},
+    {id:'flow',label:'Concept → product',w:23,r:cFlow},
+    {id:'qr',label:'Get-started QR card',w:23,r:cQr},
+    {id:'footer',label:'Footer band',w:23,r:()=>cFooter('s1')},
+  );
+  if(side==='s2') T.push(
+    {id:'header',label:'Header band',w:23,r:()=>cHeader('s2')},
+    {id:'cal',label:'Weekly calendar — 8.5×11″',w:8.5,bg:'#fff',r:cCalSheet},
+    {id:'p1',label:'Poster 1 — 11×17″',w:11,r:()=>cPoster(0)},
+    {id:'p2',label:'Poster 2 — 11×17″',w:11,r:()=>cPoster(1)},
+    {id:'info',label:'Using-the-space panel',w:23,r:cInfo},
+    {id:'footer',label:'Footer band',w:23,r:()=>cFooter('s2')},
+  );
+  if(side==='s3') T.push(
+    {id:'header',label:'Header band',w:23,r:()=>cHeader('s3')},
+    {id:'hero',label:'Find-a-Scout panel',w:23,r:cHeroS3},
+    {id:'pl1',label:'Scout plaque 1 — 8×8″',w:8,plaque:true,r:()=>plaque(0)},
+    {id:'pl2',label:'Scout plaque 2 — 8×8″',w:8,plaque:true,r:()=>plaque(1)},
+    {id:'pl3',label:'Scout plaque 3 — 8×8″',w:8,plaque:true,r:()=>plaque(2)},
+    {id:'train',label:'Get-trained panel',w:23,r:cTrain},
+    {id:'footer',label:'Footer band',w:23,r:()=>cFooter('s3')},
+  );
+  return T;
+}
+function setRenderCtx(side){ S=state[side]; G=state.global; }
+const FACE_TITLES={s1:'Side 1 · The Foundry',s2:"Side 2 · What's Happening",s3:'Side 3 · Need Help?'};
+function renderAllFaces(){
+  const cols=['s1','s2','s3'].map(sd=>{ setRenderCtx(sd); return `<div class="facecol"><div class="facetitle">${FACE_TITLES[sd]}</div>${cFace(sd)}</div>`; }).join('');
+  return `<div class="allfaces">${cols}</div>`;
+}
+function renderTarget(side, id){
+  if(id==='all') return renderAllFaces();
+  setRenderCtx(side);
+  if(id==='face') return cFace(side);
+  const t=targetsFor(side).find(x=>x.id===id);
+  if(!t) return cFace(side);
+  const w=(t.w*PXIN);
+  const cls = 'frame panel' + (t.plaque?' plaquepiece':'');
+  const bg = t.bg?`background:${t.bg};`:'';
+  return `<div class="${cls}" style="width:${w.toFixed(2)}px;${bg}">${t.r()}</div>`;
+}
+
+/* ============================ editor UI ============================ */
+function F(path,label,type,ph){
+  const v=get(path);
+  if(type==='area') return `<label class="fld"><span>${label}</span><textarea data-path="${path}" rows="3" placeholder="${ph||''}">${escAttr(v)}</textarea></label>`;
+  return `<label class="fld"><span>${label}</span><input data-path="${path}" value="${escAttr(v)}" placeholder="${ph||''}"></label>`;
+}
+function SELcls(path,label){
+  const v=get(path);
+  return `<label class="fld"><span>${label}</span><select data-path="${path}">
+    <option value="gold"${v==='gold'?' selected':''}>Gold</option>
+    <option value="teal"${v==='teal'?' selected':''}>Teal</option></select></label>`;
+}
+function grp(title, inner){ return `<div class="grp"><h4>${title}</h4>${inner}</div>`; }
+
+function editorHTML(tab){
+  if(tab==='all') return [
+    `<div class="hint">All three faces side by side — the view you’d get walking around the pillar. This panel is read-only; switch to a <b>Side</b> tab to edit copy. Hit <b>Print / Save PDF</b> to export the whole pillar as one wide sheet.</div>`,
+    grp('Tip', `<div class="fld"><span>Each face is also exportable on its own (or any single piece) from its Side tab’s <b>Export target</b> menu.</span></div>`),
+  ].join('');
+  if(tab==='shared') return [
+    `<div class="hint">Shared <b>footer furniture</b> appears on all three faces. Use <code>**bold**</code> for emphasis, <code>,</code> to separate the social chips, and press <b>Enter</b> to add another line — the footer reflows to fit.</div>`,
+    grp('Footer · all faces',
+      F('global.hours','Hours (Enter = new line)','area') +
+      F('global.social','Social chips (comma-separated)','text','IG, in, @') +
+      F('global.address','Address / contact (Enter = new line)','area')),
+  ].join('');
+
+  if(tab==='s1') return [
+    `<div class="hint">Side 1 is the evergreen identity face. <code>*word*</code> = gold, <code>**word**</code> = bold, line breaks split lines.</div>`,
+    grp('Header', F('s1.eyebrow','Eyebrow','text')),
+    grp('Hero panel',
+      F('s1.heroLabel','Label','text') +
+      F('s1.heroTitle','Title (use *gold*, line breaks)','area') +
+      F('s1.heroBody','Body','area')),
+    grp('“What it is” panel',
+      F('s1.moreBody','Body','area') +
+      F('s1.moreBadge','Gold badge','text')),
+    grp('Capabilities (icons fixed by position)',
+      F('s1.capsTitle','Section title','text') +
+      `<div class="row2">${F('s1.caps.0','1','text')}${F('s1.caps.1','2','text')}</div>`+
+      `<div class="row2">${F('s1.caps.2','3','text')}${F('s1.caps.3','4','text')}</div>`+
+      F('s1.caps.4','5','text')),
+    grp('Concept → product',
+      F('s1.flowTitle','Section title','text') +
+      stepCard(0)+stepCard(1)+stepCard(2)),
+    grp('Get-started QR',
+      F('s1.qrSmall','Eyebrow','text') +
+      F('s1.qrTitle','Headline','text') +
+      F('s1.qrUrl','URL → live scannable QR (blank = placeholder)','text')),
+  ].join('');
+
+  if(tab==='s2') return [
+    `<div class="hint">Side 2 is the live, weekly face. The real <b>calendar is a Google Calendar printout</b> that slips into the holder — you set the whiteboard, posters and “using the space” copy here.</div>`,
+    grp('Header', F('s2.eyebrow','Eyebrow','text') + F('s2.title','Title (use *gold*)','area')),
+    grp('Weekly calendar',
+      `<div class="note">Printed from <b>Google Calendar</b> (Print view → US-Letter portrait) and slipped into the holder — not set here. The mock just fills the preview.</div>` +
+      `<details class="adv"><summary>Edit the mock calendar (preview only)</summary><div class="advbody">` +
+        `<div class="row2">${F('s2.calWeekOf','Week of','text')}${F('s2.calSub','Subtitle','text')}</div>` +
+        `<div class="fld"><span>Each day: one event per line as <code>type:text</code> — <code>r</code> reserved, <code>t</code> class, <code>s</code> event, <code>g</code> closed.</span></div>` +
+        state.s2.cal.map((d,i)=>F(`s2.cal.${i}.lines`,d.d,'area')).join('') +
+      `</div></details>`),
+    grp('Whiteboard (physical board — message shown for reference)',
+      F('s2.wbMain','Main line','text') + F('s2.wbNote','Note (red)','text') + F('s2.wbGood','Friendly line (green)','text')),
+    grp('Using the space', F('s2.infoTitle','Section title','text') + infoCard(0)+infoCard(1)),
+    grp('Event posters', posterCard(0)+posterCard(1)),
+  ].join('');
+
+  if(tab==='s3') return [
+    `<div class="hint">Leave a Scout’s <b>name</b> blank to render that slot as an open cleat (“where the next Scout hangs theirs”).</div>`,
+    grp('Header', F('s3.eyebrow','Eyebrow','text') + F('s3.title','Title (use *gold*)','area')),
+    grp('Find a Scout',
+      F('s3.heroLabel','Label','text') + F('s3.heroTitle','Title (use *gold*)','area') +
+      F('s3.heroBody','Body','area') + F('s3.whereCue','Wayfinding cue','text')),
+    grp('Scouts on shift',
+      `<div class="row2">${F('s3.shiftTitle','Section title','text')}${F('s3.shiftSub','Spec note','text')}</div>` +
+      scoutCard(0)+scoutCard(1)+scoutCard(2)),
+    grp('Get trained', F('s3.trainLabel','Eyebrow','text') + F('s3.trainTitle','Headline','text') + F('s3.trainBody','Body','area') +
+      F('s3.trainQrUrl','QR URL → live scannable QR (blank = placeholder)','text')),
+  ].join('');
+  return '';
+}
+function stepCard(i){ const d=state.s1.steps[i]; return `<div class="subcard"><div class="lab">Step ${i+1}</div><div class="row2">${F(`s1.steps.${i}.h`,'Title','text')}${F(`s1.steps.${i}.p`,'Caption','text')}</div></div>`; }
+function infoCard(i){ return `<div class="subcard"><div class="lab">Row ${i+1}</div><div class="row2">${F(`s2.info.${i}.pill`,'Pill label','text')}${SELcls(`s2.info.${i}.cls`,'Pill colour')}</div>${F(`s2.info.${i}.p`,'Text','area')}</div>`; }
+function posterCard(i){ return `<div class="subcard"><div class="lab">Poster ${i+1} · ${i===0?'forest':'teal'}</div>${F(`s2.posters.${i}.date`,'Date','text')}${F(`s2.posters.${i}.title`,'Title (line breaks ok)','area')}${F(`s2.posters.${i}.qrUrl`,'QR URL → live scannable QR (optional)','text')}</div>`; }
+function scoutCard(i){ return `<div class="subcard"><div class="lab">Slot ${i+1}</div><div class="row3">${F(`s3.scouts.${i}.init`,'Initials','text')}${F(`s3.scouts.${i}.name`,'Name','text')}${F(`s3.scouts.${i}.role`,'Specialty','text')}</div></div>`; }
+
+/* ============================ wiring ============================ */
+const ui={ tab:'s1', side:'s1', target:'face' };
+const editorEl=document.getElementById('editor');
+const stageEl=document.getElementById('stage');
+const targetSel=document.getElementById('target');
+const dimNote=document.getElementById('dimnote');
+
+function autoGrow(el){ el.style.height='auto'; el.style.height=(el.scrollHeight+2)+'px'; }
+function renderEditor(){
+  editorEl.innerHTML=editorHTML(ui.tab);
+  editorEl.scrollTop=0;
+  editorEl.querySelectorAll('textarea').forEach(autoGrow);
+}
+function renderTargetSelect(){
+  let list;
+  if(ui.tab==='all'){ list=[{id:'all',label:'All three faces — one wide sheet'}]; ui.target='all'; }
+  else { list=targetsFor(ui.side); if(!list.find(t=>t.id===ui.target)) ui.target='face'; }
+  targetSel.innerHTML=list.map(t=>`<option value="${t.id}"${t.id===ui.target?' selected':''}>${t.label}</option>`).join('');
+  targetSel.value=ui.target;
+  targetSel.disabled = (ui.tab==='all');
+  updateDimNote();
+}
+function updateDimNote(){
+  if(ui.tab==='all'){ dimNote.textContent='Whole pillar · ~82×84″ large-format'; return; }
+  const t=targetsFor(ui.side).find(x=>x.id===ui.target);
+  if(!t){ dimNote.textContent=''; return; }
+  if(t.id==='face'){ dimNote.textContent='Large-format · for a print shop'; }
+  else if(t.w<=11){ dimNote.textContent='Desktop-printable size'; }
+  else { dimNote.textContent='Panel · ~'+t.w+'″ wide'; }
+}
+function renderPreview(){
+  setRenderCtx(ui.side);
+  stageEl.innerHTML=`<div id="ptarget">${renderTarget(ui.side, ui.target)}</div>`;
+  fitPreview();
+}
+function fitPreview(){
+  const el=document.getElementById('ptarget');
+  if(!el) return;
+  el.style.zoom='1';
+  const natW=el.offsetWidth||1, natH=el.offsetHeight||1;
+  const availW=stageEl.clientWidth-48, availH=stageEl.clientHeight-48;
+  let z=Math.min(availW/natW, availH/natH);
+  z=Math.max(0.22, Math.min(z, 3.0));
+  el.style.zoom=z;
+}
+function renderAll(){ renderEditor(); renderTargetSelect(); renderPreview(); }
+
+// editor input binding (event delegation)
+editorEl.addEventListener('input', e=>{
+  if(e.target.tagName==='TEXTAREA') autoGrow(e.target);
+  const path=e.target.dataset.path; if(!path) return;
+  set(path, e.target.value);
+  persist();
+  // light-touch: re-render preview only (keep editor focus/caret intact)
+  renderPreview();
+});
+
+// tabs
+document.getElementById('tabs').addEventListener('click', e=>{
+  const b=e.target.closest('[data-tab]'); if(!b) return;
+  ui.tab=b.dataset.tab;
+  if(ui.tab==='s1'||ui.tab==='s2'||ui.tab==='s3'){ ui.side=ui.tab; ui.target='face'; }
+  else if(ui.tab==='all'){ ui.target='all'; }
+  document.querySelectorAll('#tabs .tab').forEach(t=>t.classList.toggle('on', t.dataset.tab===ui.tab));
+  renderAll();
+});
+
+// target select
+targetSel.addEventListener('change', e=>{ ui.target=e.target.value; updateDimNote(); renderPreview(); });
+
+// print / save pdf
+document.getElementById('printbtn').addEventListener('click', doPrint);
+let pageStyle=document.createElement('style'); document.head.appendChild(pageStyle);
+function doPrint(){
+  setRenderCtx(ui.side);
+  const root=document.getElementById('printroot');
+  root.innerHTML=`<div id="printscale">${renderTarget(ui.side, ui.target)}</div>`;
+  const ps=document.getElementById('printscale');
+  ps.style.zoom=PRINT_ZOOM;
+  const r=ps.getBoundingClientRect();           // forces layout; dims already scaled by zoom
+  const win=(r.width/96), hin=(r.height/96);     // CSS px -> inches
+  pageStyle.textContent=`@page{size:${win.toFixed(3)}in ${hin.toFixed(3)}in;margin:0;}`;
+  window.print();
+}
+window.addEventListener('afterprint', ()=>{ document.getElementById('printroot').innerHTML=''; pageStyle.textContent=''; });
+
+// export / import / reset
+document.getElementById('exportbtn').addEventListener('click', ()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='foundry-kiosk-content.json'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+});
+const fileInput=document.getElementById('fileinput');
+document.getElementById('importbtn').addEventListener('click', ()=>fileInput.click());
+fileInput.addEventListener('change', e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{ state=deepMerge(defaults(), JSON.parse(rd.result)); persist(); renderAll(); }catch(err){ alert('Could not read that file: '+err.message); } };
+  rd.readAsText(f); fileInput.value='';
+});
+document.getElementById('resetbtn').addEventListener('click', ()=>{
+  if(!confirm('Reset all copy back to the placeholder defaults? This clears your local edits.')) return;
+  state=defaults(); localStorage.removeItem(STORE_KEY); renderAll();
+});
+
+window.addEventListener('resize', ()=>fitPreview());
+
+// boot
+document.querySelectorAll('#tabs .tab').forEach(t=>t.classList.toggle('on', t.dataset.tab===ui.tab));
+renderAll();
+</script>
+</body>
+</html>
