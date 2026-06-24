@@ -9,12 +9,21 @@ The pillar is ~**7 ft tall × 26 in per face**, three plywood faces joined by
 8×8 in Scout plaques mount onto the raw plywood on **French cleats** so pieces
 swap out without tools.
 
+## Live
+
+Hosted on GitHub Pages — **https://cagedchimp.github.io/Foundry-Kiosk/**
+
+- **Editor** (edit copy, add images/QR, export print-ready PDFs):
+  https://cagedchimp.github.io/Foundry-Kiosk/editor/
+- **Spec render** (all three faces, true scale): the landing page links to it too.
+
 ## Quick start
 
-No build, no dependencies. Open the mockups in any browser:
+No build, no dependencies. Use the hosted links above, or open locally in any browser:
 
 ```
-renders/pillar_all_sides_measured.html   # all 3 faces, true scale, with a ruler + measurements
+editor/index.html                         # the editor (edit + export print-ready PDFs)
+renders/pillar_all_sides_measured.html    # all 3 faces, true scale, with a ruler + measurements
 renders/side3_7ft.html                    # Side 3 alone at full 7 ft height
 ```
 
@@ -28,6 +37,8 @@ renders/side3_7ft.html                    # Side 3 alone at full 7 ft height
 
 ## Repo layout
 
+- `index.html` — landing page (GitHub Pages root)
+- `editor/` — the web editor (edit copy, add images/QR, export print-ready PDFs)
 - `renders/` — HTML scale mockups (the spec drawings)
 - `brand/` — wordmark, geometric pattern, Scout plaque reference
 - `docs/` — design spec, brand guide, build notes, content checklist

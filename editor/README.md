@@ -5,9 +5,11 @@ of each face — or of any individual mounted piece — at its exact real-world 
 
 ## Use it
 
-Open `editor/index.html` in **Chrome or Edge** (no build, no server, no install — just
-double-click). Keep the `vendor/` folder (offline QR library + embedded Archivo fonts)
-and the sibling `brand/` folder (wordmark + pattern) in place. Then:
+**Hosted:** https://cagedchimp.github.io/Foundry-Kiosk/editor/ (Chrome or Edge).
+
+Or run locally — open `editor/index.html` in **Chrome or Edge** (no build, no server, no
+install — just double-click). Keep the `vendor/` folder (offline QR library + embedded
+Archivo fonts) and the sibling `brand/` folder (wordmark + pattern) in place. Then:
 
 1. Pick a face tab (**Side 1 / 2 / 3**), **All faces** (see all three at once), or
    **Shared** (footer hours, socials, address).
