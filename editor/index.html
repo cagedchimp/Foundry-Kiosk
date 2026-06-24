@@ -177,6 +177,49 @@
   .tblock p{font-size:7px;line-height:1.45;color:#33342c;margin:0;white-space:pre-line;}
   .tblock p b{color:var(--green);} .tblock p em{font-style:normal;color:#b8860b;font-weight:700;}
 
+  /* ---- per-section TONE variants (light version of dark panels & vice-versa) ---- */
+  /* dark panels -> light */
+  .gpanel.v-light{background:var(--paper);}
+  .gpanel.v-light .gco{display:none;}
+  .gpanel.v-light .lbl{color:var(--green);}
+  .gpanel.v-light .big{color:var(--forest);}
+  .gpanel.v-light .big em{color:#c79100;}
+  .gpanel.v-light p{color:#3a3b32;}
+  .gpanel.v-light p b{color:var(--green);}
+  .gpanel.v-light .where{background:rgba(242,180,23,.16);border-color:rgba(242,180,23,.6);}
+  .gpanel.v-light .where span{color:var(--forest);}
+  .caps.v-light{background:var(--paper);}
+  .caps.v-light .ct2{color:var(--green);}
+  .caps.v-light .cap i{background:rgba(13,91,62,.05);border-color:rgba(242,180,23,.6);}
+  .caps.v-light .cap span{color:#56564c;}
+  .qrow.v-light{background:var(--paper);}
+  .qrow.v-light .qco{display:none;}
+  .qrow.v-light .qt{color:var(--forest);}
+  .qrow.v-light .qt b{color:var(--green);}
+  .qrow.v-light .qt small{color:var(--green);}
+  .info.v-light{background:var(--paper);}
+  .info.v-light .ih{color:var(--green);}
+  .info.v-light p{color:#33342c;}
+  .info.v-light p b{color:var(--green);}
+  /* light panels -> dark */
+  .more.v-dark{background:var(--green);}
+  .more.v-dark p{color:rgba(247,244,236,.92);}
+  .more.v-dark p b{color:var(--gold);}
+  .flow.v-dark{background:var(--forest);}
+  .flow.v-dark .ft{color:var(--teal);}
+  .flow.v-dark .step h4{color:#fff;}
+  .flow.v-dark .step p{color:rgba(247,244,236,.8);}
+  .flow.v-dark .step .arr{color:var(--gold);}
+  .train.v-dark{background:var(--green);}
+  .train.v-dark .tlbl{color:var(--teal);}
+  .train.v-dark .tbig{color:#fff;}
+  .train.v-dark p{color:rgba(247,244,236,.85);}
+  .train.v-dark p b{color:var(--gold);}
+  .tblock.v-dark{background:var(--green);}
+  .tblock.v-dark h5{color:var(--teal);}
+  .tblock.v-dark p{color:rgba(247,244,236,.92);}
+  .tblock.v-dark p b{color:var(--gold);} .tblock.v-dark p em{color:var(--gold);}
+
   .more{background:var(--paper);border-radius:6px;padding:9px 10px;}
   .more p{font-size:7px;line-height:1.42;color:#33342c;margin:0;}
   .more p b{color:var(--green);}
@@ -509,6 +552,15 @@ function panelBgClass(b, tint, pc){
   if(t==='patcorner') return `bgp-patcorner ${pc.replace('pc-','pcc-')}`;
   return '';
 }
+// per-section light/dark tone: returns the variant class + which bg tint/colour to use
+const TONE_OPTS=[{v:'',l:'Default'},{v:'light',l:'Light'},{v:'dark',l:'Dark'}];
+function panelTone(b, nativeTone, nativePc){
+  const eff=(b&&b.tone)||nativeTone;
+  const v = eff===nativeTone ? '' : (eff==='light'?'v-light':'v-dark');
+  const tint = eff==='dark' ? 'light' : 'dark';
+  const pc = eff==='dark' ? (nativeTone==='dark'?nativePc:'pc-green') : 'pc-paper';
+  return {v, tint, pc};
+}
 (function injectBgStyles(){
   const P="url('../brand/Foundry_Pattern.jpg')";
   const grad=(hex,a)=>`linear-gradient(${hexA(hex,a)},${hexA(hex,a)})`;
@@ -717,11 +769,13 @@ function cHeader(side){
     <div class="band"><div class="gco"></div>${inner}<div class="rule"></div></div></div>`;
 }
 function cHeroS1(b){
-  return `<div class="gpanel ${panelBgClass(b,'light','pc-green')}"><div class="gco c1"></div><div class="gco c2"></div>
+  const T=panelTone(b,'dark','pc-green');
+  return `<div class="gpanel ${T.v} ${panelBgClass(b,T.tint,T.pc)}"><div class="gco c1"></div><div class="gco c2"></div>
     <div class="lbl">${fmt(S.heroLabel)}</div><div class="big">${fmt(S.heroTitle)}</div><p>${fmt(S.heroBody)}</p></div>`;
 }
 function cMore(b){
-  return `<div class="more ${panelBgClass(b,'dark','pc-paper')}"><p>${fmt(S.moreBody)} <span class="free">${fmt(S.moreBadge)}</span></p></div>`;
+  const T=panelTone(b,'light','pc-paper');
+  return `<div class="more ${T.v} ${panelBgClass(b,T.tint,T.pc)}"><p>${fmt(S.moreBody)} <span class="free">${fmt(S.moreBadge)}</span></p></div>`;
 }
 function cCaps(b){
   const cells=S.caps.map((l,i)=>{
@@ -729,14 +783,17 @@ function cCaps(b){
     const glyph= im ? `<img src="${im}" alt="">` : `<svg viewBox="0 0 24 24" fill="none">${ICONS[i]||''}</svg>`;
     return `<div class="cap"><i>${glyph}</i><span>${esc(l)}</span></div>`;
   }).join('');
-  return `<div class="caps ${panelBgClass(b,'light','pc-forest')}"><div class="ct2">${fmt(S.capsTitle)}</div><div class="capgrid">${cells}</div></div>`;
+  const T=panelTone(b,'dark','pc-forest');
+  return `<div class="caps ${T.v} ${panelBgClass(b,T.tint,T.pc)}"><div class="ct2">${fmt(S.capsTitle)}</div><div class="capgrid">${cells}</div></div>`;
 }
 function cFlow(b){
   const steps=S.steps.map((s,i)=>`<div class="step"><div class="n">${i+1}</div><h4>${esc(s.h)}</h4><p>${esc(s.p)}</p>${i<S.steps.length-1?'<span class="arr">›</span>':''}</div>`).join('');
-  return `<div class="flow ${panelBgClass(b,'dark','pc-paper')}"><div class="ft">${fmt(S.flowTitle)}</div><div class="steps">${steps}</div></div>`;
+  const T=panelTone(b,'light','pc-paper');
+  return `<div class="flow ${T.v} ${panelBgClass(b,T.tint,T.pc)}"><div class="ft">${fmt(S.flowTitle)}</div><div class="steps">${steps}</div></div>`;
 }
 function cQr(b){
-  return `<div class="qrow ${panelBgClass(b,'light','pc-green')}"><div class="qco"></div>${qrBox('m', S.qrUrl)}<div class="qt"><small>${fmt(S.qrSmall)}</small><b>${fmt(S.qrTitle)}</b>${esc(S.qrUrl)}</div></div>`;
+  const T=panelTone(b,'dark','pc-green');
+  return `<div class="qrow ${T.v} ${panelBgClass(b,T.tint,T.pc)}"><div class="qco"></div>${qrBox('m', S.qrUrl)}<div class="qt"><small>${fmt(S.qrSmall)}</small><b>${fmt(S.qrTitle)}</b>${esc(S.qrUrl)}</div></div>`;
 }
 function parseEv(lines){
   return String(lines||'').split('\n').filter(x=>x.trim()).map(line=>{
@@ -759,7 +816,8 @@ function cWhiteboard(){
 }
 function cInfo(b){
   const rows=S.info.map(r=>`<div class="ir"><span class="pill ${r.cls}">${esc(r.pill)}</span><p>${fmt(r.p)}</p></div>`).join('');
-  return `<div class="info ${panelBgClass(b,'light','pc-forest')}"><div class="ih">${fmt(S.infoTitle)}</div>${rows}</div>`;
+  const T=panelTone(b,'dark','pc-forest');
+  return `<div class="info ${T.v} ${panelBgClass(b,T.tint,T.pc)}"><div class="ih">${fmt(S.infoTitle)}</div>${rows}</div>`;
 }
 function cPoster(i){
   const p=S.posters[i]; const cls=i===0?'p1':'p2';
@@ -771,7 +829,8 @@ function cPoster(i){
 }
 function cPosters(){ return `<div class="posters">${cPoster(0)}${cPoster(1)}</div>`; }
 function cHeroS3(b){
-  return `<div class="gpanel ${panelBgClass(b,'light','pc-green')}"><div class="gco c1"></div><div class="gco c2"></div>
+  const T=panelTone(b,'dark','pc-green');
+  return `<div class="gpanel ${T.v} ${panelBgClass(b,T.tint,T.pc)}"><div class="gco c1"></div><div class="gco c2"></div>
     <div class="lbl">${fmt(S.heroLabel)}</div><div class="big">${fmt(S.heroTitle)}</div><p>${fmt(S.heroBody)}</p>
     <div class="where">${APRON}<span>${esc(S.whereCue)}</span></div></div>`;
 }
@@ -790,7 +849,8 @@ function cShift(){
     <div class="plaquerow"><div class="rowrail"></div>${plaque(0)}${plaque(1)}${plaque(2)}</div></div>`;
 }
 function cTrain(b){
-  return `<div class="train ${panelBgClass(b,'dark','pc-paper')}"><div class="tinfo"><div class="tlbl">${fmt(S.trainLabel)}</div><div class="tbig">${fmt(S.trainTitle)}</div><p>${fmt(S.trainBody)}</p></div>${qrBox('s', S.trainQrUrl)}</div>`;
+  const T=panelTone(b,'light','pc-paper');
+  return `<div class="train ${T.v} ${panelBgClass(b,T.tint,T.pc)}"><div class="tinfo"><div class="tlbl">${fmt(S.trainLabel)}</div><div class="tbig">${fmt(S.trainTitle)}</div><p>${fmt(S.trainBody)}</p></div>${qrBox('s', S.trainQrUrl)}</div>`;
 }
 function cFooter(side){
   const prow = side==='s1'?1 : side==='s2'?3 : 5;
@@ -808,10 +868,12 @@ function cFooter(side){
 /* ---- addable section types (live anywhere; content stored in the block itself) ---- */
 function cTextBlock(b){
   const h = (b.title&&b.title.trim()) ? `<h5>${fmt(b.title)}</h5>` : '';
-  return `<div class="tblock ${panelBgClass(b,'dark','pc-paper')}">${h}<p>${fmt(b.body||'')}</p></div>`;
+  const T=panelTone(b,'light','pc-paper');
+  return `<div class="tblock ${T.v} ${panelBgClass(b,T.tint,T.pc)}">${h}<p>${fmt(b.body||'')}</p></div>`;
 }
 function cCustomQr(b){
-  return `<div class="qrow ${panelBgClass(b,'light','pc-green')}"><div class="qco"></div>${qrBox('m', b.url)}<div class="qt"><small>${fmt(b.eyebrow||'')}</small><b>${fmt(b.title||'')}</b>${esc(b.url||'')}</div></div>`;
+  const T=panelTone(b,'dark','pc-green');
+  return `<div class="qrow ${T.v} ${panelBgClass(b,T.tint,T.pc)}"><div class="qco"></div>${qrBox('m', b.url)}<div class="qt"><small>${fmt(b.eyebrow||'')}</small><b>${fmt(b.title||'')}</b>${esc(b.url||'')}</div></div>`;
 }
 
 /* ============================ blocks + faces ============================ */
@@ -948,8 +1010,11 @@ function secBody(b){
 }
 function bgSelect(b){
   const cur=b.pattern||'wordmark';
+  const tone=b.tone||'';
   return `<div class="secopt"><span>Background</span><select data-secbg="${b.id}">`+
-    BG_OPTS.map(o=>`<option value="${o.v}"${o.v===cur?' selected':''}>${o.l}</option>`).join('')+`</select></div>`;
+      BG_OPTS.map(o=>`<option value="${o.v}"${o.v===cur?' selected':''}>${o.l}</option>`).join('')+`</select>`+
+    `<span>Tone</span><select data-sectone="${b.id}">`+
+      TONE_OPTS.map(o=>`<option value="${o.v}"${o.v===tone?' selected':''}>${o.l}</option>`).join('')+`</select></div>`;
 }
 function secManager(side){
   const L=state[side].layout||[];
@@ -1136,6 +1201,11 @@ editorEl.addEventListener('change', e=>{
   if(t.dataset.secbg!==undefined){
     const b=(state[ui.side].layout||[]).find(x=>x.id===t.dataset.secbg);
     if(b){ b.pattern=t.value; persist(); renderPreview(); }
+    return;
+  }
+  if(t.dataset.sectone!==undefined){
+    const b=(state[ui.side].layout||[]).find(x=>x.id===t.dataset.sectone);
+    if(b){ b.tone=t.value||undefined; persist(); renderPreview(); }
     return;
   }
   if(t.dataset.secadd!==undefined){ const v=t.value; t.value=''; addSection(ui.side, v); }
