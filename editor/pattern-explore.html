@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Foundry — pattern background explorer</title>
+<style>
+  @font-face{font-family:'Trade Gothic';font-weight:400;src:url('vendor/fonts/TradeGothicLTStd.otf') format('opentype');}
+  @font-face{font-family:'Trade Gothic';font-weight:700;src:url('vendor/fonts/TradeGothicLTStd-Bold.otf') format('opentype');}
+  @font-face{font-family:'Trade Gothic';font-weight:800 900;src:url('vendor/fonts/TradeGothicLTStd-Bd2.otf') format('opentype');}
+  :root{--green:#0d5b3e;--forest:#063d2a;--gold:#f2b417;--teal:#6cc5c0;--sage:#7fa653;--paper:#f7f4ec;--ink:#0a261b;
+    --pat:url('../brand/Foundry_Pattern.jpg');}
+  *{box-sizing:border-box;}
+  body{margin:0;background:#11201a;color:#e8efe9;font-family:'Trade Gothic','Archivo',system-ui,sans-serif;padding:28px 22px 80px;}
+  h1{font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:-.01em;margin:0 0 4px;}
+  .lede{font-size:14px;color:#9fb3a8;max-width:70ch;line-height:1.55;margin:0 0 26px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:22px;}
+  .card{background:#1a2a23;border:1px solid #2c3d34;border-radius:14px;overflow:hidden;}
+  .card > .cap{display:flex;align-items:baseline;gap:8px;padding:12px 14px 10px;border-bottom:1px solid #2c3d34;}
+  .card .num{font-size:12px;font-weight:900;color:#11201a;background:var(--gold);border-radius:5px;padding:2px 7px;}
+  .card .ttl{font-size:14px;font-weight:700;}
+  .card .note{font-size:11.5px;color:#8ea89c;padding:0 14px 12px;line-height:1.45;}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:14px;}
+
+  /* sample panels (a forest one + a paper one) */
+  .panel{position:relative;overflow:hidden;border-radius:8px;padding:14px 13px;min-height:150px;}
+  .panel.forest{background:var(--forest);color:var(--paper);}
+  .panel.paper{background:var(--paper);color:#33342c;}
+  .panel .ey{position:relative;z-index:2;font-size:9px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:var(--teal);}
+  .panel.paper .ey{color:var(--green);}
+  .panel .big{position:relative;z-index:2;font-size:21px;font-weight:900;line-height:.95;text-transform:uppercase;letter-spacing:-.02em;margin:5px 0 0;color:#fff;}
+  .panel.paper .big{color:var(--forest);}
+  .panel .big em{font-style:normal;color:var(--gold);}
+  .panel p{position:relative;z-index:2;font-size:11px;line-height:1.4;margin:8px 0 0;opacity:.92;}
+
+  /* ============ TREATMENTS ============ */
+  /* 0 — plain (control) */
+
+  /* 1 — current: single faint SVG motif, corner */
+  .t1.forest{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='rgba(108,197,192,0.12)' stroke-width='9'%3E%3Cpath d='M12,28 L50,60 L88,28'/%3E%3Cpath d='M12,58 L50,90 L88,58'/%3E%3C/g%3E%3C/svg%3E"),linear-gradient(var(--forest),var(--forest));background-repeat:no-repeat;background-position:right -4px top -2px;background-size:42%;}
+  .t1.paper{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='16' y='16' width='68' height='68' fill='none' stroke='rgba(13,91,62,0.08)' stroke-width='7'/%3E%3Crect x='38' y='38' width='24' height='24' fill='rgba(13,91,62,0.08)'/%3E%3C/svg%3E"),linear-gradient(var(--paper),var(--paper));background-repeat:no-repeat;background-position:right -6px bottom -8px;background-size:46%;}
+
+  /* 2 — real pattern, ultra-faint full-panel watermark (colour gradient over the JPG) */
+  .t2.forest{background:linear-gradient(rgba(6,61,42,.93),rgba(6,61,42,.93)),var(--pat) center/170px;}
+  .t2.paper {background:linear-gradient(rgba(247,244,236,.90),rgba(247,244,236,.90)),var(--pat) center/170px;}
+
+  /* 3 — real pattern, corner block accent (contained) */
+  .panel.t3::after{content:'';position:absolute;z-index:1;top:0;right:0;width:46%;height:64%;
+    background:var(--pat) top right/150px;opacity:.18;
+    -webkit-mask:linear-gradient(225deg,#000,transparent 78%);mask:linear-gradient(225deg,#000,transparent 78%);}
+
+  /* 4 — real pattern, faded left edge stripe */
+  .panel.t4::after{content:'';position:absolute;z-index:1;top:0;left:0;bottom:0;width:30%;
+    background:var(--pat) left center/auto 100%;opacity:.5;
+    -webkit-mask:linear-gradient(90deg,#000,transparent);mask:linear-gradient(90deg,#000,transparent);}
+  .panel.t4.forest::after{opacity:.32;}
+
+  /* 5 — real pattern, monochrome watermark blended to the panel tone */
+  .panel.t5::after{content:'';position:absolute;z-index:1;inset:0;background:var(--pat) center/150px;}
+  .panel.t5.paper::after{filter:grayscale(1) contrast(1.1);opacity:.12;mix-blend-mode:multiply;}
+  .panel.t5.forest::after{filter:grayscale(1) brightness(1.4);opacity:.10;mix-blend-mode:screen;}
+
+  /* 6 — SVG motif cluster (2x2 of the pattern vocabulary), faint corner */
+  .t6.forest{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cg fill='rgba(108,197,192,0.10)' stroke='rgba(108,197,192,0.10)'%3E%3Cpolygon points='0,0 100,0 0,100' stroke='none'/%3E%3Ccircle cx='150' cy='50' r='34' fill='none' stroke-width='8'/%3E%3Crect x='118' y='118' width='64' height='64' fill='none' stroke-width='8'/%3E%3Cg stroke-width='7' fill='none'%3E%3Cline x1='0' y1='150' x2='50' y2='110'/%3E%3Cline x1='0' y1='180' x2='80' y2='110'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),linear-gradient(var(--forest),var(--forest));background-repeat:no-repeat;background-position:right bottom;background-size:62%;}
+  .t6.paper{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cg fill='rgba(13,91,62,0.08)' stroke='rgba(13,91,62,0.08)'%3E%3Cpolygon points='0,0 100,0 0,100' stroke='none'/%3E%3Ccircle cx='150' cy='50' r='34' fill='none' stroke-width='8'/%3E%3Crect x='118' y='118' width='64' height='64' fill='none' stroke-width='8'/%3E%3Cg stroke-width='7' fill='none'%3E%3Cline x1='0' y1='150' x2='50' y2='110'/%3E%3Cline x1='0' y1='180' x2='80' y2='110'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),linear-gradient(var(--paper),var(--paper));background-repeat:no-repeat;background-position:right bottom;background-size:62%;}
+
+  /* 7 — real pattern, very faint full watermark BUT larger tiles (more legible motifs) */
+  .t7.forest{background:linear-gradient(rgba(6,61,42,.90),rgba(6,61,42,.90)),var(--pat) center/280px;}
+  .t7.paper {background:linear-gradient(rgba(247,244,236,.88),rgba(247,244,236,.88)),var(--pat) center/280px;}
+
+  .ref{margin:34px 0 0;}
+  .ref img{max-width:340px;width:100%;border-radius:10px;border:1px solid #2c3d34;}
+  .ref .note{font-size:12px;color:#8ea89c;margin:8px 0 0;}
+</style>
+</head>
+<body>
+  <h1>Pattern Background Explorer</h1>
+  <p class="lede">Each option below shows a <b>forest</b> panel (left) and a <b>paper</b> panel (right),
+  so you can judge legibility on both. Options 2–5 &amp; 7 use crops of the <b>real</b>
+  <code>Foundry_Pattern.jpg</code>; options 1 &amp; 6 are clean SVG motifs. Tell me the number(s)
+  you like (and dark/light tweaks) and I'll wire it into the editor panels.</p>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="ref">
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px;">For reference — the full brand pattern</div>
+    <img src="../brand/Foundry_Pattern.jpg" alt="Foundry pattern">
+    <p class="note">The motif vocabulary: triangles, circles, nested squares, chevrons, diagonal stripe-fans.</p>
+  </div>
+
+<script>
+  const OPTS=[
+    {n:'1', t:'Current — single SVG motif', d:'One faint geometric motif tucked in a corner. Cleanest/most restrained; least “pattern”.'},
+    {n:'2', t:'Real pattern · faint watermark', d:'The actual pattern at ~8–10% behind the whole panel. Strongest tie; reads as texture.'},
+    {n:'3', t:'Real pattern · corner block', d:'A contained crop of real tiles bleeding from the top-right, masked to fade inward.'},
+    {n:'4', t:'Real pattern · faded edge stripe', d:'A vertical band of real pattern down the left edge, fading to clear — like a printed spine.'},
+    {n:'5', t:'Real pattern · monochrome watermark', d:'Pattern desaturated + tone-matched so it whispers texture without competing colour.'},
+    {n:'6', t:'SVG motif cluster (2×2)', d:'A small grid of motifs — richer than option 1, still crisp vector, no raster.'},
+    {n:'7', t:'Real pattern · large-tile watermark', d:'Like 2 but bigger tiles, so individual motifs are recognisable rather than a fine texture.'},
+  ];
+  const sample=(cls)=>`
+    <div class="pair">
+      <div class="panel forest ${cls}"><div class="ey">Go beyond the expected</div><div class="big">Bring your <em>idea</em> to life</div><p>A prototyping hub for Babson, Olin &amp; Wellesley.</p></div>
+      <div class="panel paper ${cls}"><div class="ey">From concept to product</div><div class="big">Find a <em>Scout</em></div><p>Trained students who get you started on any machine.</p></div>
+    </div>`;
+  document.getElementById('grid').innerHTML = OPTS.map(o=>`
+    <div class="card">
+      <div class="cap"><span class="num">${o.n}</span><span class="ttl">${o.t}</span></div>
+      ${sample('t'+o.n)}
+      <div class="note">${o.d}</div>
+    </div>`).join('');
+</script>
+</body>
+</html>
