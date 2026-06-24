@@ -482,27 +482,71 @@ const WM_BG_ONDARK  = svgUri(wm('#ffffff').replace('<svg ', "<svg opacity='0.08'
 const WM_BG_ONLIGHT = svgUri(wm('#0d5b3e').replace('<svg ', "<svg opacity='0.07' "));
 const MOTIF_BG_LIGHT= svgUri(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${MOTIF.chev('rgba(108,197,192,0.12)')}</svg>`);
 const MOTIF_BG_DARK = svgUri(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${MOTIF.nested('rgba(13,91,62,0.08)')}</svg>`);
-const BG_OPTS=[{v:'wordmark',l:'Wordmark'},{v:'pattern',l:'Pattern'},{v:'motif',l:'Motif'},{v:'none',l:'None'}];
+// the Foundry mark (three overlapping shapes) and a 2x2 motif cluster
+function markSvg(c){ return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='16' y='34' width='40' height='40' fill='${c}'/><circle cx='61' cy='44' r='21' fill='${c}'/><polygon points='50,22 74,68 26,68' fill='${c}'/></svg>`; }
+function clusterSvg(c){ return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><g fill='${c}' stroke='${c}'><polygon points='0,0 100,0 0,100' stroke='none'/><circle cx='150' cy='50' r='34' fill='none' stroke-width='8'/><rect x='118' y='118' width='64' height='64' fill='none' stroke-width='8'/><g fill='none' stroke-width='7'><line x1='0' y1='150' x2='50' y2='110'/><line x1='0' y1='180' x2='80' y2='110'/></g></g></svg>`; }
+const MARK_BG_ONDARK   = svgUri(markSvg('rgba(255,255,255,0.09)'));
+const MARK_BG_ONLIGHT  = svgUri(markSvg('rgba(13,91,62,0.08)'));
+const CLUSTER_BG_ONDARK= svgUri(clusterSvg('rgba(108,197,192,0.11)'));
+const CLUSTER_BG_ONLIGHT=svgUri(clusterSvg('rgba(13,91,62,0.08)'));
+const BG_OPTS=[
+  {v:'wordmark',l:'Wordmark'},
+  {v:'mark',l:'Mark (logo shapes)'},
+  {v:'pattern',l:'Pattern'},
+  {v:'patternlg',l:'Pattern — large'},
+  {v:'patcorner',l:'Pattern — corner'},
+  {v:'cluster',l:'Motif cluster'},
+  {v:'motif',l:'Motif'},
+  {v:'stripes',l:'Stripes'},
+  {v:'grid',l:'Grid'},
+  {v:'none',l:'None'},
+];
+const TINT_TREATMENTS=['wordmark','mark','motif','cluster','stripes','grid'];
 function panelBgClass(b, tint, pc){
   const t=(b&&b.pattern)||'wordmark';
   if(t==='none') return '';
-  if(t==='wordmark'||t==='motif') return `bgp-${t} ${tint==='light'?'pt-light':'pt-dark'}`;
-  if(t==='pattern') return `bgp-pattern ${pc}`;
+  const pt = tint==='light'?'pt-light':'pt-dark';
+  if(TINT_TREATMENTS.includes(t)) return `bgp-${t} ${pt}`;
+  if(t==='pattern')   return `bgp-pattern ${pc}`;
+  if(t==='patternlg') return `bgp-patternlg ${pc}`;
+  if(t==='patcorner') return `bgp-patcorner ${pc.replace('pc-','pcc-')}`;
   return '';
 }
 (function injectBgStyles(){
   const P="url('../brand/Foundry_Pattern.jpg')";
+  const grad=(hex,a)=>`linear-gradient(${hexA(hex,a)},${hexA(hex,a)})`;
+  const corner=(hex)=>`radial-gradient(135% 135% at 100% 0,transparent 0,${hexA(hex,1)} 52%)`;
   const css=`
   .bgp-wordmark{background-repeat:no-repeat;background-position:50% 50%;background-size:80%;}
   .bgp-wordmark.pt-light{background-image:${WM_BG_ONDARK};}
   .bgp-wordmark.pt-dark{background-image:${WM_BG_ONLIGHT};}
-  .bgp-pattern{background-repeat:no-repeat,repeat;background-position:center;background-size:cover,150px;}
-  .bgp-pattern.pc-green{background-image:linear-gradient(${hexA('#0d5b3e',.9)},${hexA('#0d5b3e',.9)}),${P};}
-  .bgp-pattern.pc-forest{background-image:linear-gradient(${hexA('#063d2a',.9)},${hexA('#063d2a',.9)}),${P};}
-  .bgp-pattern.pc-paper{background-image:linear-gradient(${hexA('#f7f4ec',.92)},${hexA('#f7f4ec',.92)}),${P};}
+  .bgp-mark{background-repeat:no-repeat;background-position:50% 50%;background-size:46%;}
+  .bgp-mark.pt-light{background-image:${MARK_BG_ONDARK};}
+  .bgp-mark.pt-dark{background-image:${MARK_BG_ONLIGHT};}
+  .bgp-cluster{background-repeat:no-repeat;background-position:right bottom;background-size:62%;}
+  .bgp-cluster.pt-light{background-image:${CLUSTER_BG_ONDARK};}
+  .bgp-cluster.pt-dark{background-image:${CLUSTER_BG_ONLIGHT};}
   .bgp-motif{background-repeat:no-repeat;background-position:right -4px top -2px;background-size:40%;}
   .bgp-motif.pt-light{background-image:${MOTIF_BG_LIGHT};}
-  .bgp-motif.pt-dark{background-image:${MOTIF_BG_DARK};}`;
+  .bgp-motif.pt-dark{background-image:${MOTIF_BG_DARK};}
+  .bgp-stripes{background-repeat:repeat;background-position:0 0;background-size:auto;}
+  .bgp-stripes.pt-light{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.06) 0 2px,transparent 2px 13px);}
+  .bgp-stripes.pt-dark{background-image:repeating-linear-gradient(45deg,rgba(13,91,62,.05) 0 2px,transparent 2px 13px);}
+  .bgp-grid{background-repeat:repeat;background-position:0 0;background-size:15px 15px;}
+  .bgp-grid.pt-light{background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);}
+  .bgp-grid.pt-dark{background-image:linear-gradient(rgba(13,91,62,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(13,91,62,.05) 1px,transparent 1px);}
+  .bgp-pattern{background-repeat:no-repeat,repeat;background-position:center;background-size:cover,150px;}
+  .bgp-pattern.pc-green{background-image:${grad('#0d5b3e',.9)},${P};}
+  .bgp-pattern.pc-forest{background-image:${grad('#063d2a',.9)},${P};}
+  .bgp-pattern.pc-paper{background-image:${grad('#f7f4ec',.92)},${P};}
+  .bgp-patternlg{background-repeat:no-repeat,repeat;background-position:center;background-size:cover,300px;}
+  .bgp-patternlg.pc-green{background-image:${grad('#0d5b3e',.88)},${P};}
+  .bgp-patternlg.pc-forest{background-image:${grad('#063d2a',.88)},${P};}
+  .bgp-patternlg.pc-paper{background-image:${grad('#f7f4ec',.9)},${P};}
+  .bgp-patcorner{background-repeat:no-repeat,repeat;background-position:center;background-size:cover,150px;}
+  .bgp-patcorner.pcc-green{background-image:${corner('#0d5b3e')},${P};}
+  .bgp-patcorner.pcc-forest{background-image:${corner('#063d2a')},${P};}
+  .bgp-patcorner.pcc-paper{background-image:${corner('#f7f4ec')},${P};}`;
   const s=document.createElement('style'); s.textContent=css; document.head.appendChild(s);
 })();
 
