@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weissman Foundry — Info Pillar</title>
+<style>
+  @font-face{font-family:'Archivo';font-weight:100 900;font-display:swap;
+    src:url('editor/vendor/fonts/archivo-wght-normal.woff2') format('woff2');}
+  :root{--green:#0d5b3e;--forest:#063d2a;--gold:#f2b417;--teal:#6cc5c0;--paper:#f7f4ec;--ink:#0a261b;}
+  *{box-sizing:border-box;}
+  body{margin:0;min-height:100vh;font-family:'Archivo',system-ui,-apple-system,sans-serif;color:var(--paper);
+    background:radial-gradient(120% 90% at 50% -10%,#0e6a49 0%,var(--green) 38%,var(--forest) 100%);
+    display:flex;align-items:center;justify-content:center;padding:40px 20px;}
+  .wrap{max-width:760px;width:100%;}
+  .eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:800;color:var(--teal);margin:0 0 10px;}
+  h1{font-size:clamp(30px,6vw,52px);font-weight:900;line-height:.98;letter-spacing:-.02em;text-transform:uppercase;margin:0 0 6px;}
+  h1 em{font-style:normal;color:var(--gold);}
+  .lede{font-size:15px;line-height:1.6;color:rgba(247,244,236,.86);max-width:60ch;margin:0 0 30px;}
+  .rule{width:48px;height:3px;background:var(--gold);border-radius:2px;margin:0 0 26px;}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media(max-width:560px){.cards{grid-template-columns:1fr;}}
+  a.card{display:block;text-decoration:none;color:inherit;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:20px 20px 18px;transition:.15s;}
+  a.card:hover{background:rgba(255,255,255,.1);border-color:var(--gold);transform:translateY(-2px);}
+  a.card.primary{background:var(--gold);color:#3a2c05;border-color:var(--gold);}
+  a.card.primary .k{color:#7a5e07;}
+  a.card.primary:hover{filter:brightness(1.04);}
+  .k{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;color:var(--teal);margin:0 0 6px;}
+  .t{font-size:19px;font-weight:900;letter-spacing:-.01em;margin:0 0 5px;}
+  .d{font-size:13px;line-height:1.45;opacity:.85;margin:0;}
+  .foot{margin-top:28px;font-size:12.5px;color:rgba(247,244,236,.6);}
+  .foot a{color:var(--teal);text-decoration:none;} .foot a:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="eyebrow">Weissman Foundry · Babson · Olin · Wellesley</p>
+    <h1>Info&nbsp;Pillar <em>Toolkit</em></h1>
+    <div class="rule"></div>
+    <p class="lede">Design files and a live editor for the Foundry's three-sided plywood
+      info pillar. Edit the copy for each face, drop in real photos and artwork, generate
+      scannable QR codes, and export print-ready PDFs at true size.</p>
+    <div class="cards">
+      <a class="card primary" href="editor/">
+        <p class="k">Start here</p>
+        <p class="t">Open the editor →</p>
+        <p class="d">Edit copy, add images &amp; QR codes, export print-ready PDFs.</p>
+      </a>
+      <a class="card" href="renders/pillar_all_sides_measured.html">
+        <p class="k">Reference</p>
+        <p class="t">Spec render →</p>
+        <p class="d">All three faces at true scale, measured to the sign.</p>
+      </a>
+    </div>
+    <p class="foot">Source &amp; docs on
+      <a href="https://github.com/cagedchimp/Foundry-Kiosk">GitHub</a>.
+      No build, no dependencies — just static files.</p>
+  </div>
+</body>
+</html>
