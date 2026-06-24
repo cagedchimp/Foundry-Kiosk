@@ -546,7 +546,7 @@ function panelBgClass(b, tint, pc){
 // per-section colourway. Each colour has a text scheme (light text on dark bg, or vice
 // versa); a panel gets the matching text-variant class + a cw- background + bg tint.
 const COLOR_OPTS=[{v:'',l:'Default'},{v:'green',l:'Green'},{v:'forest',l:'Forest'},{v:'paper',l:'Paper'},{v:'gold',l:'Gold'},{v:'teal',l:'Teal'},{v:'sage',l:'Sage'}];
-const CW_HEX={green:'#0d5b3e',forest:'#063d2a',paper:'#f7f4ec',gold:'#f2b417',teal:'#6cc5c0',sage:'#7fa653'};
+const CW_HEX={green:'#0d5b3e',forest:'#04291b',paper:'#fbfaf6',gold:'#f2b417',teal:'#54c1ba',sage:'#7fa653'};
 const CW_SCHEME={green:'ondark',forest:'ondark',paper:'onlight',gold:'onlight',teal:'onlight',sage:'onlight'};
 function panelColor(b, nativeCw){
   const cw=(b&&b.color)||nativeCw;
@@ -586,7 +586,8 @@ function panelColor(b, nativeCw){
   // per-colourway: background-colour + pattern-overlay tints (all six brand colours)
   for(const [name,hex] of Object.entries(CW_HEX)){
     const a = name==='gold'?.85 : name==='paper'?.92 : .9;
-    css+=`.cw-${name}{background-color:${hex};}`
+    const ring = CW_SCHEME[name]==='onlight' ? 'rgba(10,38,27,.14)' : 'rgba(255,255,255,.13)';
+    css+=`.cw-${name}{background-color:${hex};box-shadow:inset 0 0 0 1px ${ring};}`
       +`.bgp-pattern.pc-${name}{background-image:${grad(hex,a)},${P};}`
       +`.bgp-patternlg.pc-${name}{background-image:${grad(hex,a-.02)},${P};}`
       +`.bgp-patcorner.pcc-${name}{background-image:${corner(hex)},${P};}`;
