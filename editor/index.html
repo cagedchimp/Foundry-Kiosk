@@ -173,6 +173,10 @@
   .gpanel p{position:relative;z-index:2;font-size:7.5px;line-height:1.4;color:rgba(247,244,236,.92);margin:6px 0 0;}
   .gpanel p b{color:var(--gold);}
 
+  /* optional editable header bar (tiles without a native header) */
+  .tilehdr{position:relative;z-index:2;width:100%;font-size:6.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:inherit;margin:0 0 6px;padding-left:5px;border-left:2px solid var(--gold);}
+  .qrow:has(.tilehdr),.train:has(.tilehdr){flex-wrap:wrap;}
+
   /* added "Text box" section */
   .tblock{background:var(--paper);border-radius:6px;padding:10px 11px;position:relative;overflow:hidden;}
   .tblock h5{font-size:7.5px;letter-spacing:.03em;text-transform:uppercase;font-weight:900;color:var(--green);margin:0 0 4px;}
@@ -671,8 +675,8 @@ function defaults(){ return {
       {date:"Sat Mar 8",title:"Open\nBuild",qrUrl:"",img:""},
     ],
     layout:[
-      {id:'calendar',type:'calendar',on:true},
-      {id:'whiteboard',type:'whiteboard',on:true},
+      {id:'calendar',type:'calendar',on:true,headerText:'Reservations'},
+      {id:'whiteboard',type:'whiteboard',on:true,headerText:'Whiteboard'},
       {id:'info',type:'info',on:true},
       {id:'posters',type:'posters',on:true},
     ],
@@ -775,6 +779,10 @@ function fmt(s){
 
 /* ============================ components ============================ */
 let S=null, G=null; // set per render
+// optional editable header bar for tiles that don't have a built-in header
+function tileHeader(b){
+  return (b && b.header!==false && b.headerText && b.headerText.trim()) ? `<div class="tilehdr">${fmt(b.headerText)}</div>` : '';
+}
 function cHeader(side){
   const prow = side==='s1'?0 : side==='s2'?2 : 4;
   const inner = side==='s1'
@@ -785,11 +793,11 @@ function cHeader(side){
 }
 function cHeroS1(b){
   const T=panelColor(b,'green');
-  return `<div class="gpanel ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">    <div class="lbl">${fmt(S.heroLabel)}</div><div class="big">${fmt(S.heroTitle)}</div><p>${fmt(S.heroBody)}</p></div>`;
+  return `<div class="gpanel ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}<div class="lbl">${fmt(S.heroLabel)}</div><div class="big">${fmt(S.heroTitle)}</div><p>${fmt(S.heroBody)}</p></div>`;
 }
 function cMore(b){
   const T=panelColor(b,'paper');
-  return `<div class="more ${T.cls} ${panelBgClass(b,T.tint,T.pc)}"><p>${fmt(S.moreBody)} <span class="free">${fmt(S.moreBadge)}</span></p></div>`;
+  return `<div class="more ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}<p>${fmt(S.moreBody)} <span class="free">${fmt(S.moreBadge)}</span></p></div>`;
 }
 function cCaps(b){
   const cells=S.caps.map((l,i)=>{
@@ -809,7 +817,7 @@ function cFlow(b){
 }
 function cQr(b){
   const T=panelColor(b,'green');
-  return `<div class="qrow ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${qrBox('m', S.qrUrl)}<div class="qt"><small>${fmt(S.qrSmall)}</small><b>${fmt(S.qrTitle)}</b>${esc(S.qrUrl)}</div></div>`;
+  return `<div class="qrow ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}${qrBox('m', S.qrUrl)}<div class="qt"><small>${fmt(S.qrSmall)}</small><b>${fmt(S.qrTitle)}</b>${esc(S.qrUrl)}</div></div>`;
 }
 function parseEv(lines){
   return String(lines||'').split('\n').filter(x=>x.trim()).map(line=>{
@@ -827,7 +835,7 @@ function cCalSheet(){
 }
 function cCalendar(){ return `<div class="calwrap"><div class="holder">${cCalSheet()}</div></div>`; }
 function cWhiteboard(b){
-  const tab = (b&&b.header===false) ? '' : `<span class="tab">Whiteboard</span>`;
+  const tab = (b&&b.header===false) ? '' : `<span class="tab">${esc((b&&b.headerText)||'Whiteboard')}</span>`;
   return `<div class="wb">${tab}<span class="dim">24×18″</span>
     <div class="scrawl">${esc(S.wbMain)}<small>${esc(S.wbNote)}</small><span class="gr">${esc(S.wbGood)}</span></div>
     <span class="marker b"></span><span class="marker g"></span><span class="marker o"></span><span class="tray"></span></div>`;
@@ -849,7 +857,7 @@ function cPoster(i){
 function cPosters(){ return `<div class="posters">${cPoster(0)}${cPoster(1)}</div>`; }
 function cHeroS3(b){
   const T=panelColor(b,'green');
-  return `<div class="gpanel ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">    <div class="lbl">${fmt(S.hero3Label)}</div><div class="big">${fmt(S.hero3Title)}</div><p>${fmt(S.hero3Body)}</p>
+  return `<div class="gpanel ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}<div class="lbl">${fmt(S.hero3Label)}</div><div class="big">${fmt(S.hero3Title)}</div><p>${fmt(S.hero3Body)}</p>
     <div class="where">${APRON}<span>${esc(S.whereCue)}</span></div></div>`;
 }
 function plaque(i){
@@ -869,7 +877,7 @@ function cShift(b){
 }
 function cTrain(b){
   const T=panelColor(b,'paper');
-  return `<div class="train ${T.cls} ${panelBgClass(b,T.tint,T.pc)}"><div class="tinfo"><div class="tlbl">${fmt(S.trainLabel)}</div><div class="tbig">${fmt(S.trainTitle)}</div><p>${fmt(S.trainBody)}</p></div>${qrBox('s', S.trainQrUrl)}</div>`;
+  return `<div class="train ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}<div class="tinfo"><div class="tlbl">${fmt(S.trainLabel)}</div><div class="tbig">${fmt(S.trainTitle)}</div><p>${fmt(S.trainBody)}</p></div>${qrBox('s', S.trainQrUrl)}</div>`;
 }
 function cFooter(side){
   const prow = side==='s1'?1 : side==='s2'?3 : 5;
@@ -899,18 +907,18 @@ function cCustomQr(b){
 /* ============================ blocks + faces ============================ */
 // Each modular section type: how to render it and how to wrap it in the stack.
 const BLOCKS={
-  heroS1:    {label:'Hero',             wrap:'mount',   bg:true, render:b=>cHeroS1(b)},
-  more:      {label:'“What it is”',     wrap:'mount',   bg:true, render:b=>cMore(b)},
+  heroS1:    {label:'Hero',             wrap:'mount',   bg:true, hasHeader:true, editHeaderText:true, render:b=>cHeroS1(b)},
+  more:      {label:'“What it is”',     wrap:'mount',   bg:true, hasHeader:true, editHeaderText:true, render:b=>cMore(b)},
   caps:      {label:'Capabilities',     wrap:'mount',   bg:true, hasHeader:true, render:b=>cCaps(b)},
   flow:      {label:'Concept → product',wrap:'mount',   bg:true, hasHeader:true, render:b=>cFlow(b)},
-  qr:        {label:'Get-started QR',   wrap:'mount',   bg:true, render:b=>cQr(b)},
-  calendar:  {label:'Weekly calendar',  wrap:'calwrap', hasHeader:true, render:b=>`<div class="holder">${(b&&b.header===false)?'':'<span class="caltab">Reservations</span>'}${cCalSheet()}</div>`},
-  whiteboard:{label:'Whiteboard',       wrap:'wb',      hasHeader:true, render:b=>cWhiteboard(b)},
+  qr:        {label:'Get-started QR',   wrap:'mount',   bg:true, hasHeader:true, editHeaderText:true, render:b=>cQr(b)},
+  calendar:  {label:'Weekly calendar',  wrap:'calwrap', hasHeader:true, editHeaderText:true, render:b=>`<div class="holder">${(b&&b.header===false)?'':`<span class="caltab">${esc((b&&b.headerText)||'Reservations')}</span>`}${cCalSheet()}</div>`},
+  whiteboard:{label:'Whiteboard',       wrap:'wb',      hasHeader:true, editHeaderText:true, render:b=>cWhiteboard(b)},
   info:      {label:'Using the space',  wrap:'mount',   bg:true, hasHeader:true, render:b=>cInfo(b)},
-  posters:   {label:'Event posters',    wrap:'posters', render:()=>cPoster(0)+cPoster(1)},
-  heroS3:    {label:'Find a Scout',     wrap:'mount',   bg:true, render:b=>cHeroS3(b)},
+  posters:   {label:'Event posters',    wrap:'bare',    hasHeader:true, editHeaderText:true, render:b=>`${tileHeader(b)}<div class="posters">${cPoster(0)}${cPoster(1)}</div>`},
+  heroS3:    {label:'Find a Scout',     wrap:'mount',   bg:true, hasHeader:true, editHeaderText:true, render:b=>cHeroS3(b)},
   shift:     {label:'Scouts on shift',  wrap:'bare',    hasHeader:true, render:b=>cShift(b)},
-  train:     {label:'Get trained',      wrap:'mount',   bg:true, render:b=>cTrain(b)},
+  train:     {label:'Get trained',      wrap:'mount',   bg:true, hasHeader:true, editHeaderText:true, render:b=>cTrain(b)},
   text:      {label:'Text box',         wrap:'mount',   bg:true, addable:true, render:b=>cTextBlock(b)},
   customqr:  {label:'Custom QR card',   wrap:'mount',   bg:true, addable:true, render:b=>cCustomQr(b)},
 };
@@ -1045,6 +1053,9 @@ function secBody(b){
     `<input class="secfld" data-secid="${b.id}" data-secfield="qr" value="${escAttr(b.qr||'')}" placeholder="QR target (optional — overrides what the QR encodes)"></div>`;
   return '';
 }
+function headerTextField(b){
+  return `<div class="secopt"><span>Header</span><input class="secfld" style="flex:1" data-secid="${b.id}" data-secfield="headerText" value="${escAttr(b.headerText||'')}" placeholder="Header label (blank = none)"></div>`;
+}
 function secMoveRow(b, side){
   const names={s1:'Side 1 · The Foundry',s2:'Side 2 · What’s Happening',s3:'Side 3 · Need Help?'};
   const others=['s1','s2','s3'].filter(s=>s!==side);
@@ -1069,7 +1080,7 @@ function secManager(side){
       `<span class="secname">${def.label}${def.addable?' <em>(added)</em>':''}</span>`+
       (def.hasHeader?`<label class="hdrtog" title="Show this section's header label"><input type="checkbox" data-sechdr="${b.id}" ${b.header===false?'':'checked'}>Hdr</label>`:'')+
       (def.addable?`<button type="button" class="secdel" data-secdel="${b.id}" title="Remove section">✕</button>`:'')+
-      `</div>${secBody(b)}${def.bg?bgSelect(b):''}${secMoveRow(b,side)}</div>`;
+      `</div>${secBody(b)}${def.editHeaderText?headerTextField(b):''}${def.bg?bgSelect(b):''}${secMoveRow(b,side)}</div>`;
   }).join('');
   return `<div class="secmgr">${items}`+
     `<select class="secadd" data-secadd><option value="">+ Add a section…</option>`+
