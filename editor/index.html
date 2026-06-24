@@ -244,6 +244,7 @@
 
   .calwrap{position:relative;z-index:5;display:flex;justify-content:center;}
   .holder{position:relative;width:108px;background:#fff;border-radius:3px;padding:6px 6px 8px;box-shadow:0 5px 12px rgba(50,32,10,.32), inset 0 0 0 1px rgba(0,0,0,.08);}
+  .holder .caltab{position:absolute;top:-7px;left:50%;transform:translateX(-50%);background:var(--forest);color:#fff;font-size:5px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;padding:1.5px 8px;border-radius:0 0 3px 3px;z-index:8;white-space:nowrap;}
   .holder::before,.holder::after{content:'';position:absolute;top:-3px;width:22px;height:6px;border-radius:2px;background:#cfcaba;z-index:6;}
   .holder::before{left:16px;} .holder::after{right:16px;}
   .sheet{aspect-ratio:8.5/11;display:flex;flex-direction:column;background:#fff;}
@@ -882,7 +883,7 @@ const BLOCKS={
   caps:      {label:'Capabilities',     wrap:'mount',   bg:true, render:b=>cCaps(b)},
   flow:      {label:'Concept → product',wrap:'mount',   bg:true, render:b=>cFlow(b)},
   qr:        {label:'Get-started QR',   wrap:'mount',   bg:true, render:b=>cQr(b)},
-  calendar:  {label:'Weekly calendar',  wrap:'calwrap', render:()=>`<div class="holder">${cCalSheet()}</div>`},
+  calendar:  {label:'Weekly calendar',  wrap:'calwrap', render:()=>`<div class="holder"><span class="caltab">Reservations</span>${cCalSheet()}</div>`},
   whiteboard:{label:'Whiteboard',       wrap:'wb',      render:()=>cWhiteboard()},
   info:      {label:'Using the space',  wrap:'mount',   bg:true, render:b=>cInfo(b)},
   posters:   {label:'Event posters',    wrap:'posters', render:()=>cPoster(0)+cPoster(1)},
@@ -1115,8 +1116,11 @@ function editorHTML(tab){
       F('s3.heroLabel','Label','text') + F('s3.heroTitle','Title (use *gold*)','area') +
       F('s3.heroBody','Body','area') + F('s3.whereCue','Wayfinding cue','text')),
     grp('Scouts on shift',
+      `<div class="note">The real <b>8×8 Scout plaques are printed separately</b> and hung on the cleat — the slots below are just a preview mock (like the calendar).</div>` +
       `<div class="row2">${F('s3.shiftTitle','Section title','text')}${F('s3.shiftSub','Spec note','text')}</div>` +
-      scoutCard(0)+scoutCard(1)+scoutCard(2)),
+      `<details class="adv"><summary>Edit the mock plaques (preview only)</summary><div class="advbody">` +
+        scoutCard(0)+scoutCard(1)+scoutCard(2) +
+      `</div></details>`),
     grp('Get trained', F('s3.trainLabel','Eyebrow','text') + F('s3.trainTitle','Headline','text') + F('s3.trainBody','Body','area') +
       F('s3.trainQrUrl','QR URL → live scannable QR (blank = placeholder)','text')),
   ].join('');
