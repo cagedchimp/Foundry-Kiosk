@@ -11,6 +11,14 @@
     src:url('vendor/fonts/archivo-wght-normal.woff2') format('woff2');}
   @font-face{font-family:'Archivo';font-style:italic;font-weight:100 900;font-display:swap;
     src:url('vendor/fonts/archivo-wght-italic.woff2') format('woff2');}
+  /* Trade Gothic LT Std (Babson brand) — licensed; embedded for local use, gitignored so
+     it isn't redistributed via the public repo. Archivo is the fallback if absent. */
+  @font-face{font-family:'Trade Gothic';font-style:normal;font-weight:300;font-display:swap;src:url('vendor/fonts/TradeGothicLTStd-Light.otf') format('opentype');}
+  @font-face{font-family:'Trade Gothic';font-style:normal;font-weight:400;font-display:swap;src:url('vendor/fonts/TradeGothicLTStd.otf') format('opentype');}
+  @font-face{font-family:'Trade Gothic';font-style:normal;font-weight:500 700;font-display:swap;src:url('vendor/fonts/TradeGothicLTStd-Bold.otf') format('opentype');}
+  @font-face{font-family:'Trade Gothic';font-style:normal;font-weight:800 900;font-display:swap;src:url('vendor/fonts/TradeGothicLTStd-Bd2.otf') format('opentype');}
+  @font-face{font-family:'Trade Gothic';font-style:italic;font-weight:400;font-display:swap;src:url('vendor/fonts/TradeGothicLTStd-Obl.otf') format('opentype');}
+  @font-face{font-family:'Trade Gothic';font-style:italic;font-weight:500 700;font-display:swap;src:url('vendor/fonts/TradeGothicLTStd-BoldObl.otf') format('opentype');}
   :root{
     --green:#0d5b3e; --forest:#063d2a; --gold:#f2b417; --teal:#6cc5c0; --sage:#7fa653;
     --paper:#f7f4ec; --ink:#0a261b;
@@ -19,7 +27,7 @@
   }
   *{box-sizing:border-box;}
   html,body{height:100%;}
-  body{margin:0;font-family:'Archivo','Archivo Narrow',system-ui,-apple-system,sans-serif;color:var(--uitext);background:#101713;}
+  body{margin:0;font-family:'Trade Gothic','Archivo',system-ui,-apple-system,sans-serif;color:var(--uitext);background:#101713;}
 
   /* ---------------- app shell ---------------- */
   .app{display:grid;grid-template-columns:380px 1fr;grid-template-rows:52px 1fr;height:100vh;}
@@ -709,7 +717,7 @@ function cFooter(side){
     G.instagram ? `<span class="socrow"><i>${IG_ICON}</i>${esc(G.instagram)}</span>` : '',
     G.website ? `<span class="socrow"><i>${WEB_ICON}</i>${esc(G.website)}</span>` : '',
   ].join('');
-  const right = side==='s2' ? `<div class="lwm">Weissman<br><span>Foundry</span></div>` : `<div class="lwmmark">${wm('#FFFFFF')}</div>`;
+  const right = `<div class="lwmmark">${wm('#FFFFFF')}</div>`; // real vector wordmark on every face
   return `<div class="lowband">${patBand(prow)}
     <div class="lin"><div class="lleft"><div class="lsoc">${socrows}</div><div class="lhrs">${fmt(G.hours)}</div></div>
     <div class="ldiv"></div><div class="lright">${right}</div></div></div>
