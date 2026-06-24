@@ -33,6 +33,10 @@ of every Side tab lets you:
 - **Add** new sections from the “+ Add a section…” menu: a **Text box** (heading + body)
   or a **Custom QR card** (eyebrow + title + URL → live QR). Added sections are editable
   inline and removable with ✕. You can add as many as you like.
+- **Style each section** with two dropdowns: a **Background** (faint wordmark by default,
+  plus pattern/mark/motif/stripes/grid/none) and a **Color** colourway (Default, or any
+  brand colour — Green, Forest, Paper, Gold, Teal, Sage). Text recolours automatically for
+  contrast and the background watermark follows the colour.
 
 The **header and footer are fixed brand furniture** (always present); everything between
 them is modular. Your layout — order, what's on/off, and any added sections — saves locally
