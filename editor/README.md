@@ -42,11 +42,9 @@ and travels in **Export/Import JSON**.
 
 The exported PDFs are built to be print-ready, not just screenshots:
 
-- **Type: Trade Gothic LT Std** (Babson brand), with **Archivo** embedded as the fallback.
-  Trade Gothic is a licensed Monotype font, so its files are **not** committed (a desktop
-  license doesn't cover public web serving) — drop the `.otf` weights into
-  `vendor/fonts/` to use it locally. The hosted site and any machine without the files
-  fall back to Archivo (also embedded woff2). See the font note in `.gitignore`.
+- **Type: Trade Gothic LT Std** (Babson brand), embedded under the project's web-font
+  license, with **Archivo** (woff2) as the fallback for any missing weight. Brand-correct
+  on the hosted site and at the print shop — no substitution.
 - **Backgrounds always print.** Colours, QR codes, and the pattern bands are forced on
   via `print-color-adjust`, so you don't have to fiddle with the browser's "Background
   graphics" setting.

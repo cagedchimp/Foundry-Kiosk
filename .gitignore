@@ -9,9 +9,3 @@ Thumbs.db
 *.tmp
 /tmp/
 scratch/
-
-# Licensed fonts — kept local, NOT redistributed via the public repo.
-# Trade Gothic LT Std (Babson brand) is a commercial Monotype font; a desktop
-# license does not cover public web serving. The editor falls back to Archivo
-# on the hosted site. Drop the .otf files in editor/vendor/fonts/ to use locally.
-editor/vendor/fonts/TradeGothic*
