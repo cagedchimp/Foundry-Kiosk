@@ -679,7 +679,7 @@ function defaults(){ return {
     trainQrUrl:"foundry.babson.edu/attend-a-training",
     layout:[
       {id:'heroS3',type:'heroS3',on:true},
-      {id:'startquiz',type:'customqr',on:true,eyebrow:'Not sure where to start?',title:'Talk to a Scout — or take our short quiz',url:'foundry.babson.edu/get-help'},
+      {id:'startquiz',type:'customqr',on:true,eyebrow:'Not sure where to start?',title:'Talk to a Scout — or take our short quiz',url:'https://weissmanfoundry.app.n8n.cloud/form/foundry-help',caption:'Scan to find your path →'},
       {id:'shift',type:'shift',on:true},
       {id:'train',type:'train',on:true},
     ],
@@ -870,7 +870,8 @@ function cTextBlock(b){
 }
 function cCustomQr(b){
   const T=panelColor(b,'green');
-  return `<div class="qrow ${T.cls} ${panelBgClass(b,T.tint,T.pc)}"><div class="qco"></div>${qrBox('m', b.url)}<div class="qt"><small>${fmt(b.eyebrow||'')}</small><b>${fmt(b.title||'')}</b>${esc(b.url||'')}</div></div>`;
+  const cap = (b.caption&&b.caption.trim()) ? esc(b.caption) : esc(b.url||'');
+  return `<div class="qrow ${T.cls} ${panelBgClass(b,T.tint,T.pc)}"><div class="qco"></div>${qrBox('m', b.url)}<div class="qt"><small>${fmt(b.eyebrow||'')}</small><b>${fmt(b.title||'')}</b>${cap}</div></div>`;
 }
 
 /* ============================ blocks + faces ============================ */
@@ -1002,7 +1003,8 @@ function secBody(b){
   if(b.type==='customqr') return `<div class="secbody"><div class="srow2">`+
     `<input class="secfld" data-secid="${b.id}" data-secfield="eyebrow" value="${escAttr(b.eyebrow||'')}" placeholder="Eyebrow">`+
     `<input class="secfld" data-secid="${b.id}" data-secfield="title" value="${escAttr(b.title||'')}" placeholder="Title"></div>`+
-    `<input class="secfld" data-secid="${b.id}" data-secfield="url" value="${escAttr(b.url||'')}" placeholder="URL → live QR"></div>`;
+    `<input class="secfld" data-secid="${b.id}" data-secfield="url" value="${escAttr(b.url||'')}" placeholder="URL → live QR (encoded exactly)">`+
+    `<input class="secfld" data-secid="${b.id}" data-secfield="caption" value="${escAttr(b.caption||'')}" placeholder="Caption under title (optional — shown instead of the URL)"></div>`;
   return '';
 }
 function bgSelect(b){
