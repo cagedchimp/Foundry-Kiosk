@@ -65,6 +65,8 @@
   .secrow .grip{color:var(--uimut);cursor:grab;font-size:12px;letter-spacing:-3px;user-select:none;padding-right:2px;}
   .secrow input[type=checkbox]{accent-color:var(--gold);width:14px;height:14px;cursor:pointer;flex:0 0 auto;}
   .secrow .secname{flex:1;font-size:12.5px;font-weight:600;color:var(--uitext);}
+  .secrow .hdrtog{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;color:var(--uimut);cursor:pointer;user-select:none;white-space:nowrap;}
+  .secrow .hdrtog input{accent-color:var(--gold);width:13px;height:13px;cursor:pointer;}
   .secrow .secname em{font-style:normal;color:var(--uimut);font-size:10.5px;font-weight:500;}
   .secdel{appearance:none;border:none;background:transparent;color:var(--uimut);cursor:pointer;font-size:13px;line-height:1;padding:3px 5px;border-radius:5px;}
   .secdel:hover{color:#ff9b9b;background:rgba(255,255,255,.05);}
@@ -789,12 +791,14 @@ function cCaps(b){
     return `<div class="cap"><i>${glyph}</i><span>${esc(l)}</span></div>`;
   }).join('');
   const T=panelColor(b,'forest');
-  return `<div class="caps ${T.cls} ${panelBgClass(b,T.tint,T.pc)}"><div class="ct2">${fmt(S.capsTitle)}</div><div class="capgrid">${cells}</div></div>`;
+  const hdr = (b&&b.header===false) ? '' : `<div class="ct2">${fmt(S.capsTitle)}</div>`;
+  return `<div class="caps ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${hdr}<div class="capgrid">${cells}</div></div>`;
 }
 function cFlow(b){
   const steps=S.steps.map((s,i)=>`<div class="step"><div class="n">${i+1}</div><h4>${esc(s.h)}</h4><p>${esc(s.p)}</p>${i<S.steps.length-1?'<span class="arr">›</span>':''}</div>`).join('');
   const T=panelColor(b,'paper');
-  return `<div class="flow ${T.cls} ${panelBgClass(b,T.tint,T.pc)}"><div class="ft">${fmt(S.flowTitle)}</div><div class="steps">${steps}</div></div>`;
+  const hdr = (b&&b.header===false) ? '' : `<div class="ft">${fmt(S.flowTitle)}</div>`;
+  return `<div class="flow ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${hdr}<div class="steps">${steps}</div></div>`;
 }
 function cQr(b){
   const T=panelColor(b,'green');
@@ -815,15 +819,17 @@ function cCalSheet(){
     <div class="ckey"><span><i style="background:#f2b417"></i>Reserved</span><span><i style="background:#6cc5c0"></i>Class</span><span><i style="background:#7fa653"></i>Event</span></div></div>`;
 }
 function cCalendar(){ return `<div class="calwrap"><div class="holder">${cCalSheet()}</div></div>`; }
-function cWhiteboard(){
-  return `<div class="wb"><span class="tab">Whiteboard</span><span class="dim">24×18″</span>
+function cWhiteboard(b){
+  const tab = (b&&b.header===false) ? '' : `<span class="tab">Whiteboard</span>`;
+  return `<div class="wb">${tab}<span class="dim">24×18″</span>
     <div class="scrawl">${esc(S.wbMain)}<small>${esc(S.wbNote)}</small><span class="gr">${esc(S.wbGood)}</span></div>
     <span class="marker b"></span><span class="marker g"></span><span class="marker o"></span><span class="tray"></span></div>`;
 }
 function cInfo(b){
   const rows=S.info.map(r=>`<div class="ir"><span class="pill ${r.cls}">${esc(r.pill)}</span><p>${fmt(r.p)}</p></div>`).join('');
   const T=panelColor(b,'forest');
-  return `<div class="info ${T.cls} ${panelBgClass(b,T.tint,T.pc)}"><div class="ih">${fmt(S.infoTitle)}</div>${rows}</div>`;
+  const hdr = (b&&b.header===false) ? '' : `<div class="ih">${fmt(S.infoTitle)}</div>`;
+  return `<div class="info ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${hdr}${rows}</div>`;
 }
 function cPoster(i){
   const p=S.posters[i]; const cls=i===0?'p1':'p2';
@@ -850,8 +856,9 @@ function plaque(i){
     <div class="inner"><div class="photo"><span class="tape"></span>${face}</div>
     <div class="pname">${esc(sc.name)}</div><div class="ppill">Scout</div><div class="prole"><b>${esc(sc.role)}</b></div></div></div>`;
 }
-function cShift(){
-  return `<div><div class="sectionhdr"><span class="dotlive"></span><span class="sht">${fmt(S.shiftTitle)}</span><span class="shsub">${esc(S.shiftSub)}</span></div>
+function cShift(b){
+  const hdr = (b&&b.header===false) ? '' : `<div class="sectionhdr"><span class="dotlive"></span><span class="sht">${fmt(S.shiftTitle)}</span><span class="shsub">${esc(S.shiftSub)}</span></div>`;
+  return `<div>${hdr}
     <div class="plaquerow"><div class="rowrail"></div>${plaque(0)}${plaque(1)}${plaque(2)}</div></div>`;
 }
 function cTrain(b){
@@ -888,15 +895,15 @@ function cCustomQr(b){
 const BLOCKS={
   heroS1:    {label:'Hero',             wrap:'mount',   bg:true, render:b=>cHeroS1(b)},
   more:      {label:'“What it is”',     wrap:'mount',   bg:true, render:b=>cMore(b)},
-  caps:      {label:'Capabilities',     wrap:'mount',   bg:true, render:b=>cCaps(b)},
-  flow:      {label:'Concept → product',wrap:'mount',   bg:true, render:b=>cFlow(b)},
+  caps:      {label:'Capabilities',     wrap:'mount',   bg:true, hasHeader:true, render:b=>cCaps(b)},
+  flow:      {label:'Concept → product',wrap:'mount',   bg:true, hasHeader:true, render:b=>cFlow(b)},
   qr:        {label:'Get-started QR',   wrap:'mount',   bg:true, render:b=>cQr(b)},
-  calendar:  {label:'Weekly calendar',  wrap:'calwrap', render:()=>`<div class="holder"><span class="caltab">Reservations</span>${cCalSheet()}</div>`},
-  whiteboard:{label:'Whiteboard',       wrap:'wb',      render:()=>cWhiteboard()},
-  info:      {label:'Using the space',  wrap:'mount',   bg:true, render:b=>cInfo(b)},
+  calendar:  {label:'Weekly calendar',  wrap:'calwrap', hasHeader:true, render:b=>`<div class="holder">${(b&&b.header===false)?'':'<span class="caltab">Reservations</span>'}${cCalSheet()}</div>`},
+  whiteboard:{label:'Whiteboard',       wrap:'wb',      hasHeader:true, render:b=>cWhiteboard(b)},
+  info:      {label:'Using the space',  wrap:'mount',   bg:true, hasHeader:true, render:b=>cInfo(b)},
   posters:   {label:'Event posters',    wrap:'posters', render:()=>cPoster(0)+cPoster(1)},
   heroS3:    {label:'Find a Scout',     wrap:'mount',   bg:true, render:b=>cHeroS3(b)},
-  shift:     {label:'Scouts on shift',  wrap:'bare',    render:()=>cShift()},
+  shift:     {label:'Scouts on shift',  wrap:'bare',    hasHeader:true, render:b=>cShift(b)},
   train:     {label:'Get trained',      wrap:'mount',   bg:true, render:b=>cTrain(b)},
   text:      {label:'Text box',         wrap:'mount',   bg:true, addable:true, render:b=>cTextBlock(b)},
   customqr:  {label:'Custom QR card',   wrap:'mount',   bg:true, addable:true, render:b=>cCustomQr(b)},
@@ -1033,6 +1040,7 @@ function secManager(side){
       `<div class="secrow"><span class="grip" title="Drag to reorder">⋮⋮</span>`+
       `<input type="checkbox" data-sectog="${b.id}" ${b.on?'checked':''} title="Show / hide">`+
       `<span class="secname">${def.label}${def.addable?' <em>(added)</em>':''}</span>`+
+      (def.hasHeader?`<label class="hdrtog" title="Show this section's header label"><input type="checkbox" data-sechdr="${b.id}" ${b.header===false?'':'checked'}>Hdr</label>`:'')+
       (def.addable?`<button type="button" class="secdel" data-secdel="${b.id}" title="Remove section">✕</button>`:'')+
       `</div>${secBody(b)}${def.bg?bgSelect(b):''}</div>`;
   }).join('');
@@ -1222,6 +1230,11 @@ editorEl.addEventListener('change', e=>{
   if(t.dataset.seccolor!==undefined){
     const b=(state[ui.side].layout||[]).find(x=>x.id===t.dataset.seccolor);
     if(b){ b.color=t.value||undefined; persist(); renderPreview(); }
+    return;
+  }
+  if(t.dataset.sechdr!==undefined && t.type==='checkbox'){
+    const b=(state[ui.side].layout||[]).find(x=>x.id===t.dataset.sechdr);
+    if(b){ b.header=t.checked; persist(); renderPreview(); }
     return;
   }
   if(t.dataset.secadd!==undefined){ const v=t.value; t.value=''; addSection(ui.side, v); }
