@@ -31,8 +31,10 @@ The exported PDFs are built to be print-ready, not just screenshots:
 - **Backgrounds always print.** Colours, QR codes, and the pattern bands are forced on
   via `print-color-adjust`, so you don't have to fiddle with the browser's "Background
   graphics" setting.
-- **Real brand pattern.** The header/footer bands now use crops of
-  `brand/Foundry_Pattern.jpg` (not the old SVG reconstruction).
+- **Real brand pattern.** The header/footer bands use crops of
+  `brand/Foundry_Pattern.jpg`; several section panels also carry a faint motif drawn
+  from the pattern vocabulary (nested squares, chevrons, stripe-fan, triangle, quarter-disc)
+  for subtle variety — kept contained, never confetti.
 - **Exact sizes.** Every target prints at its true dimension (a plaque is a real 8×8″,
   a poster a real 11×17″, etc.).
 

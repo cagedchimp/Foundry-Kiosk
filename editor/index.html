@@ -419,6 +419,22 @@ function qrBox(size, url){
   catch(e){ return qrGrid(size); }
 }
 
+/* ---- subtle motif backgrounds (pattern vocabulary, faint, one per section) ---- */
+const MOTIF={
+  nested:c=>`<rect x='16' y='16' width='68' height='68' fill='none' stroke='${c}' stroke-width='7'/><rect x='38' y='38' width='24' height='24' fill='${c}'/>`,
+  chev:c=>`<g fill='none' stroke='${c}' stroke-width='9' stroke-linejoin='round'><path d='M12,28 L50,60 L88,28'/><path d='M12,58 L50,90 L88,58'/></g>`,
+  fan:c=>`<g stroke='${c}' stroke-width='7'><line x1='100' y1='0' x2='0' y2='100'/><line x1='100' y1='28' x2='28' y2='100'/><line x1='100' y1='56' x2='56' y2='100'/><line x1='72' y1='0' x2='0' y2='72'/><line x1='44' y1='0' x2='0' y2='44'/></g>`,
+  tri:c=>`<polygon points='0,0 100,0 0,100' fill='${c}'/>`,
+  quarter:c=>`<path d='M100,40 A60,60 0 0,1 40,100 L100,100 Z' fill='${c}'/>`,
+  diamond:c=>`<rect x='28' y='28' width='44' height='44' fill='none' stroke='${c}' stroke-width='8' transform='rotate(45 50 50)'/>`,
+};
+function motifBg(kind,color,pos,size){
+  const svg=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${MOTIF[kind](color)}</svg>`;
+  // encode so the value is safe inside a double-quoted style="" attribute and a single-quoted url('')
+  const enc=encodeURIComponent(svg).replace(/'/g,'%27').replace(/\(/g,'%28').replace(/\)/g,'%29');
+  return `background-image:url('data:image/svg+xml,${enc}');background-repeat:no-repeat;background-position:${pos};background-size:${size};`;
+}
+
 /* ============================ default content ============================ */
 function defaults(){ return {
   global:{
@@ -556,7 +572,7 @@ function cHeroS1(){
     <div class="lbl">${fmt(S.heroLabel)}</div><div class="big">${fmt(S.heroTitle)}</div><p>${fmt(S.heroBody)}</p></div>`;
 }
 function cMore(){
-  return `<div class="more"><p>${fmt(S.moreBody)} <span class="free">${fmt(S.moreBadge)}</span></p></div>`;
+  return `<div class="more" style="${motifBg('nested','rgba(13,91,62,0.06)','right -6px bottom -8px','44%')}"><p>${fmt(S.moreBody)} <span class="free">${fmt(S.moreBadge)}</span></p></div>`;
 }
 function cCaps(){
   const cells=S.caps.map((l,i)=>{
@@ -564,11 +580,11 @@ function cCaps(){
     const glyph= im ? `<img src="${im}" alt="">` : `<svg viewBox="0 0 24 24" fill="none">${ICONS[i]||''}</svg>`;
     return `<div class="cap"><i>${glyph}</i><span>${esc(l)}</span></div>`;
   }).join('');
-  return `<div class="caps"><div class="ct2">${fmt(S.capsTitle)}</div><div class="capgrid">${cells}</div></div>`;
+  return `<div class="caps" style="${motifBg('chev','rgba(108,197,192,0.10)','right -4px top -2px','38%')}"><div class="ct2">${fmt(S.capsTitle)}</div><div class="capgrid">${cells}</div></div>`;
 }
 function cFlow(){
   const steps=S.steps.map((s,i)=>`<div class="step"><div class="n">${i+1}</div><h4>${esc(s.h)}</h4><p>${esc(s.p)}</p>${i<S.steps.length-1?'<span class="arr">›</span>':''}</div>`).join('');
-  return `<div class="flow"><div class="ft">${fmt(S.flowTitle)}</div><div class="steps">${steps}</div></div>`;
+  return `<div class="flow" style="${motifBg('fan','rgba(127,166,83,0.14)','right top','42%')}"><div class="ft">${fmt(S.flowTitle)}</div><div class="steps">${steps}</div></div>`;
 }
 function cQr(){
   return `<div class="qrow"><div class="qco"></div>${qrBox('m', S.qrUrl)}<div class="qt"><small>${fmt(S.qrSmall)}</small><b>${fmt(S.qrTitle)}</b>${esc(S.qrUrl)}</div></div>`;
@@ -594,7 +610,7 @@ function cWhiteboard(){
 }
 function cInfo(){
   const rows=S.info.map(r=>`<div class="ir"><span class="pill ${r.cls}">${esc(r.pill)}</span><p>${fmt(r.p)}</p></div>`).join('');
-  return `<div class="info"><div class="ih">${fmt(S.infoTitle)}</div>${rows}</div>`;
+  return `<div class="info" style="${motifBg('tri','rgba(108,197,192,0.10)','left top','46%')}"><div class="ih">${fmt(S.infoTitle)}</div>${rows}</div>`;
 }
 function cPoster(i){
   const p=S.posters[i]; const cls=i===0?'p1':'p2';
@@ -625,7 +641,7 @@ function cShift(){
     <div class="plaquerow"><div class="rowrail"></div>${plaque(0)}${plaque(1)}${plaque(2)}</div></div>`;
 }
 function cTrain(){
-  return `<div class="train"><div class="tinfo"><div class="tlbl">${fmt(S.trainLabel)}</div><div class="tbig">${fmt(S.trainTitle)}</div><p>${fmt(S.trainBody)}</p></div>${qrBox('s', S.trainQrUrl)}</div>`;
+  return `<div class="train" style="${motifBg('quarter','rgba(108,197,192,0.12)','right bottom','40%')}"><div class="tinfo"><div class="tlbl">${fmt(S.trainLabel)}</div><div class="tbig">${fmt(S.trainTitle)}</div><p>${fmt(S.trainBody)}</p></div>${qrBox('s', S.trainQrUrl)}</div>`;
 }
 function cFooter(side){
   const prow = side==='s1'?1 : side==='s2'?3 : 5;
