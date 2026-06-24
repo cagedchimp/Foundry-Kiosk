@@ -518,7 +518,17 @@ function load(){
   return d;
 }
 function deepMerge(base, over){
-  if(Array.isArray(base)){ return Array.isArray(over)? over.map((v,i)=> (v&&typeof v==='object')? deepMerge(base[i]??{}, v): v) : base; }
+  if(Array.isArray(base)){
+    if(!Array.isArray(over)) return base;
+    // keep base's length so a shorter saved/imported array never drops fixed-arity slots
+    const len=Math.max(base.length, over.length), out=[];
+    for(let i=0;i<len;i++){
+      if(i>=over.length) out.push(base[i]);
+      else if(base[i]&&typeof base[i]==='object') out.push(deepMerge(base[i]??{}, over[i]));
+      else out.push(over[i]);
+    }
+    return out;
+  }
   if(base && typeof base==='object'){
     const out={...base};
     for(const k in over){ out[k] = (base[k]&&typeof base[k]==='object'&&over[k]&&typeof over[k]==='object')? deepMerge(base[k], over[k]) : over[k]; }
@@ -543,7 +553,10 @@ function persist(){
 function get(path){ return path.split('.').reduce((o,k)=> (o==null?o:o[k]), state); }
 function set(path,val){
   const parts=path.split('.'); let o=state;
-  for(let i=0;i<parts.length-1;i++){ o=o[parts[i]]; }
+  for(let i=0;i<parts.length-1;i++){
+    if(o[parts[i]]==null){ o[parts[i]] = /^\d+$/.test(parts[i+1]) ? [] : {}; } // auto-create missing intermediates
+    o=o[parts[i]];
+  }
   o[parts[parts.length-1]]=val;
 }
 
@@ -898,6 +911,10 @@ editorEl.addEventListener('input', e=>{
   // light-touch: re-render preview only (keep editor focus/caret intact)
   renderPreview();
 });
+// textareas inside a collapsed <details> measure as 0-height; re-grow them when it opens
+editorEl.addEventListener('toggle', e=>{
+  if(e.target.tagName==='DETAILS' && e.target.open) e.target.querySelectorAll('textarea').forEach(autoGrow);
+}, true);
 
 // image upload / clear (Scout photos, poster artwork, custom icons)
 const imgInput=document.getElementById('imginput');
@@ -924,6 +941,7 @@ document.getElementById('tabs').addEventListener('click', e=>{
   ui.tab=b.dataset.tab;
   if(ui.tab==='s1'||ui.tab==='s2'||ui.tab==='s3'){ ui.side=ui.tab; ui.target='face'; }
   else if(ui.tab==='all'){ ui.target='all'; }
+  else if(ui.tab==='shared'){ ui.target='face'; } // show a whole face so footer edits are visible
   document.querySelectorAll('#tabs .tab').forEach(t=>t.classList.toggle('on', t.dataset.tab===ui.tab));
   renderAll();
 });
