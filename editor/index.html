@@ -529,10 +529,14 @@ const MARK_BG_ONDARK   = svgUri(markSvg('rgba(255,255,255,0.11)'));
 const MARK_BG_ONLIGHT  = svgUri(markSvg('rgba(13,91,62,0.12)'));
 const CLUSTER_BG_ONDARK= svgUri(clusterSvg('rgba(108,197,192,0.13)'));
 const CLUSTER_BG_ONLIGHT=svgUri(clusterSvg('rgba(13,91,62,0.12)'));
+function sqShape(c){ return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect x='6' y='6' width='28' height='28' transform='rotate(45 20 20)' fill='${c}'/></svg>`; }
+const SQ_ONDARK = svgUri(sqShape('rgba(6,61,42,0.42)'));
+const SQ_ONLIGHT= svgUri(sqShape('rgba(13,91,62,0.13)'));
 const BG_OPTS=[
+  {v:'pattern',l:'Pattern'},
+  {v:'shapes',l:'Shapes (circle + square)'},
   {v:'wordmark',l:'Wordmark'},
   {v:'mark',l:'Mark (logo shapes)'},
-  {v:'pattern',l:'Pattern'},
   {v:'patternlg',l:'Pattern — large'},
   {v:'patcorner',l:'Pattern — corner'},
   {v:'cluster',l:'Motif cluster'},
@@ -541,9 +545,9 @@ const BG_OPTS=[
   {v:'grid',l:'Grid'},
   {v:'none',l:'None'},
 ];
-const TINT_TREATMENTS=['wordmark','mark','motif','cluster','stripes','grid'];
+const TINT_TREATMENTS=['wordmark','mark','motif','cluster','stripes','grid','shapes'];
 function panelBgClass(b, tint, pc){
-  const t=(b&&b.pattern)||'wordmark';
+  const t=(b&&b.pattern)||'pattern';
   if(t==='none') return '';
   const pt = tint==='light'?'pt-light':'pt-dark';
   if(TINT_TREATMENTS.includes(t)) return `bgp-${t} ${pt}`;
@@ -589,9 +593,13 @@ function panelColor(b, nativeCw){
   .bgp-grid{background-repeat:repeat;background-position:0 0;background-size:15px 15px;}
   .bgp-grid.pt-light{background-image:linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px);}
   .bgp-grid.pt-dark{background-image:linear-gradient(rgba(13,91,62,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(13,91,62,.09) 1px,transparent 1px);}
-  .bgp-pattern{background-repeat:no-repeat,repeat;background-position:center;background-size:cover,150px;}
-  .bgp-patternlg{background-repeat:no-repeat,repeat;background-position:center;background-size:cover,300px;}
-  .bgp-patcorner{background-repeat:no-repeat,repeat;background-position:center;background-size:cover,150px;}`;
+  .bgp-shapes{background-repeat:no-repeat,no-repeat;background-position:top right,left -9px bottom -9px;background-size:auto,42px;}
+  .bgp-shapes.pt-light{background-image:radial-gradient(circle 44px at 100% 0,rgba(127,166,83,.16) 0 44px,transparent 44px),${SQ_ONDARK};}
+  .bgp-shapes.pt-dark{background-image:radial-gradient(circle 44px at 100% 0,rgba(13,91,62,.10) 0 44px,transparent 44px),${SQ_ONLIGHT};}
+  /* pattern treatments use a single cover image (no tiling) so there's no repeat seam */
+  .bgp-pattern{background-repeat:no-repeat;background-position:center;background-size:cover;}
+  .bgp-patternlg{background-repeat:no-repeat;background-position:center;background-size:190%;}
+  .bgp-patcorner{background-repeat:no-repeat;background-position:center;background-size:cover;}`;
   // per-colourway: background-colour + pattern-overlay tints (all six brand colours)
   for(const [name,hex] of Object.entries(CW_HEX)){
     const a = name==='gold'?.85 : name==='paper'?.92 : .9;
@@ -773,12 +781,11 @@ function cHeader(side){
     ? `<div class="wmwrap">${wm('#FFFFFF')}</div><div class="eyebrow" style="margin-top:9px;">${fmt(S.eyebrow)}</div>`
     : `<div class="eyebrow">${fmt(S.eyebrow)}</div><h3>${fmt(S.title)}</h3>`;
   return `<div class="hdrgreen">${patBand(prow)}
-    <div class="band"><div class="gco"></div>${inner}<div class="rule"></div></div></div>`;
+    <div class="band">${inner}<div class="rule"></div></div></div>`;
 }
 function cHeroS1(b){
   const T=panelColor(b,'green');
-  return `<div class="gpanel ${T.cls} ${panelBgClass(b,T.tint,T.pc)}"><div class="gco c1"></div><div class="gco c2"></div>
-    <div class="lbl">${fmt(S.heroLabel)}</div><div class="big">${fmt(S.heroTitle)}</div><p>${fmt(S.heroBody)}</p></div>`;
+  return `<div class="gpanel ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">    <div class="lbl">${fmt(S.heroLabel)}</div><div class="big">${fmt(S.heroTitle)}</div><p>${fmt(S.heroBody)}</p></div>`;
 }
 function cMore(b){
   const T=panelColor(b,'paper');
@@ -802,7 +809,7 @@ function cFlow(b){
 }
 function cQr(b){
   const T=panelColor(b,'green');
-  return `<div class="qrow ${T.cls} ${panelBgClass(b,T.tint,T.pc)}"><div class="qco"></div>${qrBox('m', S.qrUrl)}<div class="qt"><small>${fmt(S.qrSmall)}</small><b>${fmt(S.qrTitle)}</b>${esc(S.qrUrl)}</div></div>`;
+  return `<div class="qrow ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${qrBox('m', S.qrUrl)}<div class="qt"><small>${fmt(S.qrSmall)}</small><b>${fmt(S.qrTitle)}</b>${esc(S.qrUrl)}</div></div>`;
 }
 function parseEv(lines){
   return String(lines||'').split('\n').filter(x=>x.trim()).map(line=>{
@@ -842,8 +849,7 @@ function cPoster(i){
 function cPosters(){ return `<div class="posters">${cPoster(0)}${cPoster(1)}</div>`; }
 function cHeroS3(b){
   const T=panelColor(b,'green');
-  return `<div class="gpanel ${T.cls} ${panelBgClass(b,T.tint,T.pc)}"><div class="gco c1"></div><div class="gco c2"></div>
-    <div class="lbl">${fmt(S.hero3Label)}</div><div class="big">${fmt(S.hero3Title)}</div><p>${fmt(S.hero3Body)}</p>
+  return `<div class="gpanel ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">    <div class="lbl">${fmt(S.hero3Label)}</div><div class="big">${fmt(S.hero3Title)}</div><p>${fmt(S.hero3Body)}</p>
     <div class="where">${APRON}<span>${esc(S.whereCue)}</span></div></div>`;
 }
 function plaque(i){
@@ -887,7 +893,7 @@ function cTextBlock(b){
 function cCustomQr(b){
   const T=panelColor(b,'green');
   const target=(b.qr&&b.qr.trim()) ? b.qr : b.url; // QR encodes the override if set, else the shown link
-  return `<div class="qrow ${T.cls} ${panelBgClass(b,T.tint,T.pc)}"><div class="qco"></div>${qrBox('m', target)}<div class="qt"><small>${fmt(b.eyebrow||'')}</small><b>${fmt(b.title||'')}</b>${esc(b.url||'')}</div></div>`;
+  return `<div class="qrow ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${qrBox('m', target)}<div class="qt"><small>${fmt(b.eyebrow||'')}</small><b>${fmt(b.title||'')}</b>${esc(b.url||'')}</div></div>`;
 }
 
 /* ============================ blocks + faces ============================ */
@@ -1046,7 +1052,7 @@ function secMoveRow(b, side){
     others.map(s=>`<option value="${s}">${names[s]}</option>`).join('')+`</select></div>`;
 }
 function bgSelect(b){
-  const cur=b.pattern||'wordmark';
+  const cur=b.pattern||'pattern';
   const color=b.color||'';
   return `<div class="secopt"><span>Background</span><select data-secbg="${b.id}">`+
       BG_OPTS.map(o=>`<option value="${o.v}"${o.v===cur?' selected':''}>${o.l}</option>`).join('')+`</select>`+
