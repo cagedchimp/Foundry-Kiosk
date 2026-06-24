@@ -49,6 +49,23 @@
   .imbtns{display:flex;gap:6px;flex-wrap:wrap;}
   .imbtn{font-size:11.5px;padding:5px 10px;}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  /* section manager */
+  .secmgr{margin:0 0 2px;}
+  .secitem{background:#0e1714;border:1px solid var(--uiline);border-radius:8px;margin-bottom:6px;}
+  .secitem.dragging{opacity:.4;border-color:var(--gold);}
+  .secrow{display:flex;align-items:center;gap:8px;padding:7px 9px;}
+  .secrow .grip{color:var(--uimut);cursor:grab;font-size:12px;letter-spacing:-3px;user-select:none;padding-right:2px;}
+  .secrow input[type=checkbox]{accent-color:var(--gold);width:14px;height:14px;cursor:pointer;flex:0 0 auto;}
+  .secrow .secname{flex:1;font-size:12.5px;font-weight:600;color:var(--uitext);}
+  .secrow .secname em{font-style:normal;color:var(--uimut);font-size:10.5px;font-weight:500;}
+  .secdel{appearance:none;border:none;background:transparent;color:var(--uimut);cursor:pointer;font-size:13px;line-height:1;padding:3px 5px;border-radius:5px;}
+  .secdel:hover{color:#ff9b9b;background:rgba(255,255,255,.05);}
+  .secbody{padding:0 9px 9px;display:flex;flex-direction:column;gap:6px;}
+  .secbody .srow2{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .secfld{width:100%;font:inherit;font-size:12.5px;color:var(--uitext);background:#0b120f;border:1px solid var(--uiline);border-radius:6px;padding:6px 8px;resize:vertical;}
+  .secfld:focus{outline:none;border-color:var(--teal);}
+  .secadd{width:100%;font:inherit;font-size:12.5px;font-weight:600;color:var(--gold);background:#0e1714;border:1px dashed var(--uiline);border-radius:8px;padding:8px 9px;cursor:pointer;margin-top:2px;}
+  .sechint{font-size:10.5px;line-height:1.4;color:var(--uimut);margin:7px 2px 0;}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;}
   .subcard{border:1px solid var(--uiline);border-radius:8px;padding:9px 9px 2px;margin:0 0 9px;background:rgba(255,255,255,.015);}
   .subcard > .lab{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--teal);font-weight:800;margin:0 0 7px;}
@@ -141,6 +158,12 @@
   .gpanel .big em{font-style:normal;color:var(--gold);}
   .gpanel p{position:relative;z-index:2;font-size:7.5px;line-height:1.4;color:rgba(247,244,236,.92);margin:6px 0 0;}
   .gpanel p b{color:var(--gold);}
+
+  /* added "Text box" section */
+  .tblock{background:var(--paper);border-radius:6px;padding:10px 11px;position:relative;overflow:hidden;}
+  .tblock h5{font-size:7.5px;letter-spacing:.03em;text-transform:uppercase;font-weight:900;color:var(--green);margin:0 0 4px;}
+  .tblock p{font-size:7px;line-height:1.45;color:#33342c;margin:0;white-space:pre-line;}
+  .tblock p b{color:var(--green);} .tblock p em{font-style:normal;color:#b8860b;font-weight:700;}
 
   .more{background:var(--paper);border-radius:6px;padding:9px 10px;}
   .more p{font-size:7px;line-height:1.42;color:#33342c;margin:0;}
@@ -458,6 +481,13 @@ function defaults(){ return {
     qrSmall:"New here?",
     qrTitle:"Get started",
     qrUrl:"foundry.babson.edu/gettingstarted",
+    layout:[
+      {id:'heroS1',type:'heroS1',on:true},
+      {id:'more',type:'more',on:true},
+      {id:'caps',type:'caps',on:true},
+      {id:'flow',type:'flow',on:true},
+      {id:'qr',type:'qr',on:true},
+    ],
   },
   s2:{
     eyebrow:"This week in the space",
@@ -485,6 +515,12 @@ function defaults(){ return {
       {date:"Fri Mar 7",title:"Screen\nPrinting",qrUrl:"",img:""},
       {date:"Sat Mar 8",title:"Open\nBuild",qrUrl:"",img:""},
     ],
+    layout:[
+      {id:'calendar',type:'calendar',on:true},
+      {id:'whiteboard',type:'whiteboard',on:true},
+      {id:'info',type:'info',on:true},
+      {id:'posters',type:'posters',on:true},
+    ],
   },
   s3:{
     eyebrow:"Stuck? We've got you",
@@ -504,18 +540,29 @@ function defaults(){ return {
     trainTitle:"Get trained",
     trainBody:"Free weekly trainings. **Sign up online** — a Scout certifies you.",
     trainQrUrl:"foundry.babson.edu/attend-a-training",
+    layout:[
+      {id:'heroS3',type:'heroS3',on:true},
+      {id:'shift',type:'shift',on:true},
+      {id:'train',type:'train',on:true},
+    ],
   },
 };}
 
 /* ============================ state + persistence ============================ */
 let state = load();
 function load(){
-  const d=defaults();
   try{
     const saved=JSON.parse(localStorage.getItem(STORE_KEY)||'null');
-    if(saved) return deepMerge(d, saved);
+    if(saved) return mergeSaved(saved);
   }catch(e){}
-  return d;
+  return defaults();
+}
+// Merge saved content over defaults, but take each side's `layout` wholesale (it is
+// order-sensitive — index-merging would scramble a reordered / added-to section list).
+function mergeSaved(saved){
+  const m=deepMerge(defaults(), saved);
+  for(const sd of ['s1','s2','s3']){ if(saved && saved[sd] && Array.isArray(saved[sd].layout)) m[sd].layout=saved[sd].layout; }
+  return m;
 }
 function deepMerge(base, over){
   if(Array.isArray(base)){
@@ -669,53 +716,73 @@ function cFooter(side){
     <div class="ftr"><div class="fin"><div class="fmeta">${fmt(G.address)}</div></div></div>`;
 }
 
-/* ============================ faces ============================ */
+/* ---- addable section types (live anywhere; content stored in the block itself) ---- */
+function cTextBlock(b){
+  const h = (b.title&&b.title.trim()) ? `<h5>${fmt(b.title)}</h5>` : '';
+  return `<div class="tblock" style="${motifBg('diamond','rgba(13,91,62,0.06)','right -8px bottom -8px','40%')}">${h}<p>${fmt(b.body||'')}</p></div>`;
+}
+function cCustomQr(b){
+  return `<div class="qrow"><div class="qco"></div>${qrBox('m', b.url)}<div class="qt"><small>${fmt(b.eyebrow||'')}</small><b>${fmt(b.title||'')}</b>${esc(b.url||'')}</div></div>`;
+}
+
+/* ============================ blocks + faces ============================ */
+// Each modular section type: how to render it and how to wrap it in the stack.
+const BLOCKS={
+  heroS1:    {label:'Hero',             wrap:'mount',   render:()=>cHeroS1()},
+  more:      {label:'“What it is”',     wrap:'mount',   render:()=>cMore()},
+  caps:      {label:'Capabilities',     wrap:'mount',   render:()=>cCaps()},
+  flow:      {label:'Concept → product',wrap:'mount',   render:()=>cFlow()},
+  qr:        {label:'Get-started QR',   wrap:'mount',   render:()=>cQr()},
+  calendar:  {label:'Weekly calendar',  wrap:'calwrap', render:()=>`<div class="holder">${cCalSheet()}</div>`},
+  whiteboard:{label:'Whiteboard',       wrap:'wb',      render:()=>cWhiteboard()},
+  info:      {label:'Using the space',  wrap:'mount',   render:()=>cInfo()},
+  posters:   {label:'Event posters',    wrap:'posters', render:()=>cPoster(0)+cPoster(1)},
+  heroS3:    {label:'Find a Scout',     wrap:'mount',   render:()=>cHeroS3()},
+  shift:     {label:'Scouts on shift',  wrap:'bare',    render:()=>cShift()},
+  train:     {label:'Get trained',      wrap:'mount',   render:()=>cTrain()},
+  text:      {label:'Text box',         wrap:'mount',   addable:true, render:b=>cTextBlock(b)},
+  customqr:  {label:'Custom QR card',   wrap:'mount',   addable:true, render:b=>cCustomQr(b)},
+};
+const ADDABLE=['text','customqr'];
+function wrapBlock(wrap, inner, mb){
+  const m = mb ? 'margin-bottom:8px;' : '';
+  if(wrap==='wb')      return `<div class="mount" style="${m}box-shadow:0 6px 14px rgba(50,32,10,.3);">${inner}</div>`;
+  if(wrap==='posters') return `<div class="posters" style="${m}">${inner}</div>`;
+  if(wrap==='calwrap') return `<div class="calwrap" style="${m}">${inner}</div>`;
+  if(wrap==='bare')    return `<div style="${m}">${inner}</div>`;
+  return `<div class="mount" style="${m}">${inner}</div>`;
+}
 function mount(html, last){ return `<div class="mount"${last?'':' style="margin-bottom:8px;"'}>${html}</div>`; }
 function faceInner(side){
-  let body='';
-  if(side==='s1'){
-    body = mount(cHeader('s1')) + mount(cHeroS1()) + mount(cMore()) + mount(cCaps()) + mount(cFlow()) + mount(cQr(), true);
-  } else if(side==='s2'){
-    body = mount(cHeader('s2')) + `<div class="calwrap" style="margin-bottom:8px;"><div class="holder">${cCalSheet()}</div></div>`
-         + `<div class="mount" style="margin-bottom:8px;box-shadow:0 6px 14px rgba(50,32,10,.3);">${cWhiteboard()}</div>`
-         + mount(cInfo()) + `<div class="posters" style="margin-bottom:8px;">${cPoster(0)}${cPoster(1)}</div>`;
-  } else {
-    body = mount(cHeader('s3')) + mount(cHeroS3()) + `<div style="margin-bottom:8px;">${cShift()}</div>` + mount(cTrain(), true);
-  }
-  return body + `<div class="gap"><div class="ghost">Breathing room</div></div>` + cFooter(side);
+  const blocks=(state[side].layout||[]).filter(b=>b.on && BLOCKS[b.type]);
+  const mids=blocks.map((b,i)=> wrapBlock(BLOCKS[b.type].wrap, BLOCKS[b.type].render(b), i<blocks.length-1)).join('');
+  return mount(cHeader(side)) + mids + `<div class="gap"><div class="ghost">Breathing room</div></div>` + cFooter(side);
 }
 function cFace(side){ return `<div class="ply">${faceInner(side)}</div>`; }
 
 /* ============================ export targets (face + pieces) ============================ */
 // w/h in inches. If h omitted, height is content-driven (aspect-ratio handles fixed pieces).
+// Export targets follow the live layout: whole face, then each enabled section
+// (sub-split into individual posters/plaques), then footer.
 function targetsFor(side){
-  const T=[{id:'face',label:`Whole face — 26×84″`}];
-  if(side==='s1') T.push(
-    {id:'header',label:'Header band',w:23,r:()=>cHeader('s1')},
-    {id:'hero',label:'Hero panel',w:23,r:cHeroS1},
-    {id:'more',label:'“What it is” panel',w:23,r:cMore},
-    {id:'caps',label:'Capabilities strip',w:23,r:cCaps},
-    {id:'flow',label:'Concept → product',w:23,r:cFlow},
-    {id:'qr',label:'Get-started QR card',w:23,r:cQr},
-    {id:'footer',label:'Footer band',w:23,r:()=>cFooter('s1')},
-  );
-  if(side==='s2') T.push(
-    {id:'header',label:'Header band',w:23,r:()=>cHeader('s2')},
-    {id:'cal',label:'Weekly calendar — 8.5×11″',w:8.5,bg:'#fff',r:cCalSheet},
-    {id:'p1',label:'Poster 1 — 11×17″',w:11,r:()=>cPoster(0)},
-    {id:'p2',label:'Poster 2 — 11×17″',w:11,r:()=>cPoster(1)},
-    {id:'info',label:'Using-the-space panel',w:23,r:cInfo},
-    {id:'footer',label:'Footer band',w:23,r:()=>cFooter('s2')},
-  );
-  if(side==='s3') T.push(
-    {id:'header',label:'Header band',w:23,r:()=>cHeader('s3')},
-    {id:'hero',label:'Find-a-Scout panel',w:23,r:cHeroS3},
-    {id:'pl1',label:'Scout plaque 1 — 8×8″',w:8,plaque:true,r:()=>plaque(0)},
-    {id:'pl2',label:'Scout plaque 2 — 8×8″',w:8,plaque:true,r:()=>plaque(1)},
-    {id:'pl3',label:'Scout plaque 3 — 8×8″',w:8,plaque:true,r:()=>plaque(2)},
-    {id:'train',label:'Get-trained panel',w:23,r:cTrain},
-    {id:'footer',label:'Footer band',w:23,r:()=>cFooter('s3')},
-  );
+  const T=[{id:'face',label:'Whole face — 26×84″'},{id:'header',label:'Header band',w:23,r:()=>cHeader(side)}];
+  for(const b of (state[side].layout||[])){
+    if(!b.on) continue; const def=BLOCKS[b.type]; if(!def) continue;
+    if(b.type==='posters'){
+      T.push({id:'p1',label:'Poster 1 — 11×17″',w:11,r:()=>cPoster(0)},{id:'p2',label:'Poster 2 — 11×17″',w:11,r:()=>cPoster(1)});
+    } else if(b.type==='shift'){
+      T.push({id:'pl1',label:'Scout plaque 1 — 8×8″',w:8,plaque:true,r:()=>plaque(0)},
+             {id:'pl2',label:'Scout plaque 2 — 8×8″',w:8,plaque:true,r:()=>plaque(1)},
+             {id:'pl3',label:'Scout plaque 3 — 8×8″',w:8,plaque:true,r:()=>plaque(2)});
+    } else if(b.type==='calendar'){
+      T.push({id:'cal',label:'Weekly calendar — 8.5×11″',w:8.5,bg:'#fff',r:()=>cCalSheet()});
+    } else if(b.type==='whiteboard'){
+      /* physical board — not an export */
+    } else {
+      T.push({id:b.id,label:def.label+' panel',w:23,r:()=>def.render(b)});
+    }
+  }
+  T.push({id:'footer',label:'Footer band',w:23,r:()=>cFooter(side)});
   return T;
 }
 function setRenderCtx(side){ S=state[side]; G=state.global; }
@@ -779,6 +846,50 @@ function loadDownscaled(file, maxDim, mime){
 }
 const IMG_KINDS={photo:{max:700,mime:'image/jpeg'},poster:{max:1600,mime:'image/jpeg'},icon:{max:400,mime:'image/png'}};
 
+/* ---- section manager: enable/disable, reorder (drag), add/remove sections ---- */
+function secBody(b){
+  if(b.type==='text') return `<div class="secbody">`+
+    `<input class="secfld" data-secid="${b.id}" data-secfield="title" value="${escAttr(b.title||'')}" placeholder="Heading (optional)">`+
+    `<textarea class="secfld" data-secid="${b.id}" data-secfield="body" rows="2" placeholder="Your text…">${escAttr(b.body||'')}</textarea></div>`;
+  if(b.type==='customqr') return `<div class="secbody"><div class="srow2">`+
+    `<input class="secfld" data-secid="${b.id}" data-secfield="eyebrow" value="${escAttr(b.eyebrow||'')}" placeholder="Eyebrow">`+
+    `<input class="secfld" data-secid="${b.id}" data-secfield="title" value="${escAttr(b.title||'')}" placeholder="Title"></div>`+
+    `<input class="secfld" data-secid="${b.id}" data-secfield="url" value="${escAttr(b.url||'')}" placeholder="URL → live QR"></div>`;
+  return '';
+}
+function secManager(side){
+  const L=state[side].layout||[];
+  const items=L.map(b=>{
+    const def=BLOCKS[b.type]||{label:b.type};
+    return `<div class="secitem" draggable="true" data-secid="${b.id}">`+
+      `<div class="secrow"><span class="grip" title="Drag to reorder">⋮⋮</span>`+
+      `<input type="checkbox" data-sectog="${b.id}" ${b.on?'checked':''} title="Show / hide">`+
+      `<span class="secname">${def.label}${def.addable?' <em>(added)</em>':''}</span>`+
+      (def.addable?`<button type="button" class="secdel" data-secdel="${b.id}" title="Remove section">✕</button>`:'')+
+      `</div>${secBody(b)}</div>`;
+  }).join('');
+  return `<div class="secmgr">${items}`+
+    `<select class="secadd" data-secadd><option value="">+ Add a section…</option>`+
+      ADDABLE.map(t=>`<option value="${t}">${BLOCKS[t].label}</option>`).join('')+`</select>`+
+    `<p class="sechint">Drag ⋮⋮ to reorder · checkbox shows/hides · header &amp; footer are fixed.</p></div>`;
+}
+let blockSeq=0;
+function addSection(side,type){
+  if(!type||!BLOCKS[type]) return;
+  const id=type+'-'+Date.now().toString(36)+(blockSeq++);
+  const blk={id,type,on:true};
+  if(type==='text'){ blk.title='New section'; blk.body='Add your text here.'; }
+  if(type==='customqr'){ blk.eyebrow='Scan'; blk.title='Learn more'; blk.url=''; }
+  state[side].layout.push(blk);
+  persist(); renderEditor(); renderTargetSelect(); renderPreview();
+}
+function moveBlock(side, fromId, toId, after){
+  const L=state[side].layout; const fi=L.findIndex(b=>b.id===fromId); if(fi<0) return;
+  const [m]=L.splice(fi,1);
+  const ti=L.findIndex(b=>b.id===toId);
+  if(ti<0) L.push(m); else L.splice(after?ti+1:ti,0,m);
+}
+
 function editorHTML(tab){
   if(tab==='all') return [
     `<div class="hint">All three faces side by side — the view you’d get walking around the pillar. This panel is read-only; switch to a <b>Side</b> tab to edit copy. Hit <b>Print / Save PDF</b> to export the whole pillar as one wide sheet.</div>`,
@@ -795,6 +906,7 @@ function editorHTML(tab){
 
   if(tab==='s1') return [
     `<div class="hint">Side 1 is the evergreen identity face. <code>*word*</code> = gold, <code>**word**</code> = bold, line breaks split lines.</div>`,
+    grp('Sections', secManager('s1')),
     grp('Header', F('s1.eyebrow','Eyebrow','text')),
     grp('Hero panel',
       F('s1.heroLabel','Label','text') +
@@ -822,6 +934,7 @@ function editorHTML(tab){
 
   if(tab==='s2') return [
     `<div class="hint">Side 2 is the live, weekly face. The real <b>calendar is a Google Calendar printout</b> that slips into the holder — you set the whiteboard, posters and “using the space” copy here.</div>`,
+    grp('Sections', secManager('s2')),
     grp('Header', F('s2.eyebrow','Eyebrow','text') + F('s2.title','Title (use *gold*)','area')),
     grp('Weekly calendar',
       `<div class="note">Printed from <b>Google Calendar</b> (Print view → US-Letter portrait) and slipped into the holder — not set here. The mock just fills the preview.</div>` +
@@ -838,6 +951,7 @@ function editorHTML(tab){
 
   if(tab==='s3') return [
     `<div class="hint">Leave a Scout’s <b>name</b> blank to render that slot as an open cleat (“where the next Scout hangs theirs”).</div>`,
+    grp('Sections', secManager('s3')),
     grp('Header', F('s3.eyebrow','Eyebrow','text') + F('s3.title','Title (use *gold*)','area')),
     grp('Find a Scout',
       F('s3.heroLabel','Label','text') + F('s3.heroTitle','Title (use *gold*)','area') +
@@ -904,13 +1018,48 @@ function renderAll(){ renderEditor(); renderTargetSelect(); renderPreview(); }
 
 // editor input binding (event delegation)
 editorEl.addEventListener('input', e=>{
-  if(e.target.tagName==='TEXTAREA') autoGrow(e.target);
-  const path=e.target.dataset.path; if(!path) return;
-  set(path, e.target.value);
+  const t=e.target;
+  if(t.tagName==='TEXTAREA') autoGrow(t);
+  if(t.dataset.secfield){ // content of an added section (text / custom QR) lives in the block
+    const b=(state[ui.side].layout||[]).find(x=>x.id===t.dataset.secid);
+    if(b){ b[t.dataset.secfield]=t.value; persist(); renderPreview(); }
+    return;
+  }
+  const path=t.dataset.path; if(!path) return;
+  set(path, t.value);
   persist();
   // light-touch: re-render preview only (keep editor focus/caret intact)
   renderPreview();
 });
+// section toggle (checkbox) and add-section (select) both fire 'change'
+editorEl.addEventListener('change', e=>{
+  const t=e.target;
+  if(t.dataset.sectog!==undefined && t.type==='checkbox'){
+    const b=(state[ui.side].layout||[]).find(x=>x.id===t.dataset.sectog);
+    if(b){ b.on=t.checked; persist(); renderPreview(); renderTargetSelect(); }
+    return;
+  }
+  if(t.dataset.secadd!==undefined){ const v=t.value; t.value=''; addSection(ui.side, v); }
+});
+// drag-to-reorder sections
+let dragId=null;
+editorEl.addEventListener('dragstart', e=>{
+  const it=e.target.closest('.secitem'); if(!it) return;
+  if(e.target.closest('input,textarea,select,button')){ e.preventDefault(); return; } // let controls work normally
+  dragId=it.dataset.secid; it.classList.add('dragging'); e.dataTransfer.effectAllowed='move';
+  try{ e.dataTransfer.setData('text/plain', dragId); }catch(_){}
+});
+editorEl.addEventListener('dragover', e=>{ if(dragId && e.target.closest('.secitem')) e.preventDefault(); });
+editorEl.addEventListener('drop', e=>{
+  const it=e.target.closest('.secitem'); if(!it||!dragId) return; e.preventDefault();
+  const overId=it.dataset.secid;
+  if(overId!==dragId){
+    const r=it.getBoundingClientRect(); const after=(e.clientY-r.top) > r.height/2;
+    moveBlock(ui.side, dragId, overId, after);
+    persist(); renderEditor(); renderTargetSelect(); renderPreview();
+  }
+});
+editorEl.addEventListener('dragend', ()=>{ dragId=null; editorEl.querySelectorAll('.secitem.dragging').forEach(x=>x.classList.remove('dragging')); });
 // textareas inside a collapsed <details> measure as 0-height; re-grow them when it opens
 editorEl.addEventListener('toggle', e=>{
   if(e.target.tagName==='DETAILS' && e.target.open) e.target.querySelectorAll('textarea').forEach(autoGrow);
@@ -923,7 +1072,10 @@ editorEl.addEventListener('click', e=>{
   const pick=e.target.closest('[data-imgpick]');
   if(pick){ pendingImg={path:pick.dataset.imgpick, kind:pick.dataset.imgkind}; imgInput.value=''; imgInput.click(); return; }
   const clr=e.target.closest('[data-imgclear]');
-  if(clr){ set(clr.dataset.imgclear, ''); persist(); renderEditor(); renderPreview(); }
+  if(clr){ set(clr.dataset.imgclear, ''); persist(); renderEditor(); renderPreview(); return; }
+  const del=e.target.closest('[data-secdel]');
+  if(del){ const id=del.dataset.secdel; state[ui.side].layout=(state[ui.side].layout||[]).filter(b=>b.id!==id);
+    persist(); renderEditor(); renderTargetSelect(); renderPreview(); }
 });
 imgInput.addEventListener('change', async e=>{
   const f=e.target.files[0]; if(!f||!pendingImg) return;
@@ -1012,7 +1164,7 @@ document.getElementById('importbtn').addEventListener('click', ()=>fileInput.cli
 fileInput.addEventListener('change', e=>{
   const f=e.target.files[0]; if(!f) return;
   const rd=new FileReader();
-  rd.onload=()=>{ try{ state=deepMerge(defaults(), JSON.parse(rd.result)); persist(); renderAll(); }catch(err){ alert('Could not read that file: '+err.message); } };
+  rd.onload=()=>{ try{ state=mergeSaved(JSON.parse(rd.result)); persist(); renderAll(); }catch(err){ alert('Could not read that file: '+err.message); } };
   rd.readAsText(f); fileInput.value='';
 });
 document.getElementById('resetbtn').addEventListener('click', ()=>{

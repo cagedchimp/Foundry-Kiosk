@@ -22,6 +22,22 @@ Archivo fonts) and the sibling `brand/` folder (wordmark + pattern) in place. Th
 5. Click **Print / Save PDF** → in the print dialog choose *Save as PDF*. The page is
    pre-sized to the target's true dimensions, so the output is vector-sharp and to scale.
 
+## Sections (modular layout)
+
+Each face is a stack of **sections** you can rearrange — the **Sections** panel at the top
+of every Side tab lets you:
+
+- **Show / hide** any section with its checkbox (hidden sections drop out of the preview
+  *and* the export menu).
+- **Reorder** by dragging the ⋮⋮ handle.
+- **Add** new sections from the “+ Add a section…” menu: a **Text box** (heading + body)
+  or a **Custom QR card** (eyebrow + title + URL → live QR). Added sections are editable
+  inline and removable with ✕. You can add as many as you like.
+
+The **header and footer are fixed brand furniture** (always present); everything between
+them is modular. Your layout — order, what's on/off, and any added sections — saves locally
+and travels in **Export/Import JSON**.
+
 ## Print quality
 
 The exported PDFs are built to be print-ready, not just screenshots:
