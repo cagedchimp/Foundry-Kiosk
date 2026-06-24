@@ -475,17 +475,17 @@ function motifBg(kind,color,pos,size){
    stay cheap. Tone classes (pt-light/pt-dark) pick the tint; pc-* picks the pattern tone. */
 function hexA(hex,a){ const n=parseInt(hex.slice(1),16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
 function svgUri(svg){ return `url('data:image/svg+xml,${encodeURIComponent(svg).replace(/'/g,'%27')}')`; }
-const WM_BG_ONDARK  = svgUri(wm('#ffffff').replace('<svg ', "<svg opacity='0.08' "));
-const WM_BG_ONLIGHT = svgUri(wm('#0d5b3e').replace('<svg ', "<svg opacity='0.07' "));
-const MOTIF_BG_LIGHT= svgUri(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${MOTIF.chev('rgba(108,197,192,0.12)')}</svg>`);
-const MOTIF_BG_DARK = svgUri(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${MOTIF.nested('rgba(13,91,62,0.08)')}</svg>`);
+const WM_BG_ONDARK  = svgUri(wm('#ffffff').replace('<svg ', "<svg opacity='0.09' "));
+const WM_BG_ONLIGHT = svgUri(wm('#0d5b3e').replace('<svg ', "<svg opacity='0.11' "));
+const MOTIF_BG_LIGHT= svgUri(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${MOTIF.chev('rgba(108,197,192,0.14)')}</svg>`);
+const MOTIF_BG_DARK = svgUri(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${MOTIF.nested('rgba(13,91,62,0.13)')}</svg>`);
 // the Foundry mark (three overlapping shapes) and a 2x2 motif cluster
 function markSvg(c){ return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='16' y='34' width='40' height='40' fill='${c}'/><circle cx='61' cy='44' r='21' fill='${c}'/><polygon points='50,22 74,68 26,68' fill='${c}'/></svg>`; }
 function clusterSvg(c){ return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'><g fill='${c}' stroke='${c}'><polygon points='0,0 100,0 0,100' stroke='none'/><circle cx='150' cy='50' r='34' fill='none' stroke-width='8'/><rect x='118' y='118' width='64' height='64' fill='none' stroke-width='8'/><g fill='none' stroke-width='7'><line x1='0' y1='150' x2='50' y2='110'/><line x1='0' y1='180' x2='80' y2='110'/></g></g></svg>`; }
-const MARK_BG_ONDARK   = svgUri(markSvg('rgba(255,255,255,0.09)'));
-const MARK_BG_ONLIGHT  = svgUri(markSvg('rgba(13,91,62,0.08)'));
-const CLUSTER_BG_ONDARK= svgUri(clusterSvg('rgba(108,197,192,0.11)'));
-const CLUSTER_BG_ONLIGHT=svgUri(clusterSvg('rgba(13,91,62,0.08)'));
+const MARK_BG_ONDARK   = svgUri(markSvg('rgba(255,255,255,0.11)'));
+const MARK_BG_ONLIGHT  = svgUri(markSvg('rgba(13,91,62,0.12)'));
+const CLUSTER_BG_ONDARK= svgUri(clusterSvg('rgba(108,197,192,0.13)'));
+const CLUSTER_BG_ONLIGHT=svgUri(clusterSvg('rgba(13,91,62,0.12)'));
 const BG_OPTS=[
   {v:'wordmark',l:'Wordmark'},
   {v:'mark',l:'Mark (logo shapes)'},
@@ -527,11 +527,11 @@ function panelBgClass(b, tint, pc){
   .bgp-motif.pt-light{background-image:${MOTIF_BG_LIGHT};}
   .bgp-motif.pt-dark{background-image:${MOTIF_BG_DARK};}
   .bgp-stripes{background-repeat:repeat;background-position:0 0;background-size:auto;}
-  .bgp-stripes.pt-light{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.06) 0 2px,transparent 2px 13px);}
-  .bgp-stripes.pt-dark{background-image:repeating-linear-gradient(45deg,rgba(13,91,62,.05) 0 2px,transparent 2px 13px);}
+  .bgp-stripes.pt-light{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.08) 0 2px,transparent 2px 13px);}
+  .bgp-stripes.pt-dark{background-image:repeating-linear-gradient(45deg,rgba(13,91,62,.09) 0 2px,transparent 2px 13px);}
   .bgp-grid{background-repeat:repeat;background-position:0 0;background-size:15px 15px;}
-  .bgp-grid.pt-light{background-image:linear-gradient(rgba(255,255,255,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.06) 1px,transparent 1px);}
-  .bgp-grid.pt-dark{background-image:linear-gradient(rgba(13,91,62,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(13,91,62,.05) 1px,transparent 1px);}
+  .bgp-grid.pt-light{background-image:linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px);}
+  .bgp-grid.pt-dark{background-image:linear-gradient(rgba(13,91,62,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(13,91,62,.09) 1px,transparent 1px);}
   .bgp-pattern{background-repeat:no-repeat,repeat;background-position:center;background-size:cover,150px;}
   .bgp-pattern.pc-green{background-image:${grad('#0d5b3e',.9)},${P};}
   .bgp-pattern.pc-forest{background-image:${grad('#063d2a',.9)},${P};}
