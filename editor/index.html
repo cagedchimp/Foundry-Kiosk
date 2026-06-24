@@ -72,6 +72,10 @@
   .secdel:hover{color:#ff9b9b;background:rgba(255,255,255,.05);}
   .secbody{padding:0 9px 9px;display:flex;flex-direction:column;gap:6px;}
   .secbody .srow2{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .secopt{display:flex;align-items:center;gap:8px;padding:0 9px 9px;}
+  .secopt > span{font-size:11px;color:var(--uimut);font-weight:600;}
+  .secopt select{flex:1;font:inherit;font-size:12px;color:var(--uitext);background:#0b120f;border:1px solid var(--uiline);border-radius:6px;padding:5px 7px;cursor:pointer;}
+  .secopt select:focus{outline:none;border-color:var(--teal);}
   .secfld{width:100%;font:inherit;font-size:12.5px;color:var(--uitext);background:#0b120f;border:1px solid var(--uiline);border-radius:6px;padding:6px 8px;resize:vertical;}
   .secfld:focus{outline:none;border-color:var(--teal);}
   .secadd{width:100%;font:inherit;font-size:12.5px;font-weight:600;color:var(--gold);background:#0e1714;border:1px dashed var(--uiline);border-radius:8px;padding:8px 9px;cursor:pointer;margin-top:2px;}
@@ -469,6 +473,39 @@ function motifBg(kind,color,pos,size){
   return `background-image:url('data:image/svg+xml,${enc}');background-repeat:no-repeat;background-position:${pos};background-size:${size};`;
 }
 
+/* ---- per-section panel backgrounds: wordmark (default) / pattern / motif / none ----
+   Data URIs live once in an injected stylesheet; panels just get classes, so re-renders
+   stay cheap. Tone classes (pt-light/pt-dark) pick the tint; pc-* picks the pattern tone. */
+function hexA(hex,a){ const n=parseInt(hex.slice(1),16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`; }
+function svgUri(svg){ return `url('data:image/svg+xml,${encodeURIComponent(svg).replace(/'/g,'%27')}')`; }
+const WM_BG_ONDARK  = svgUri(wm('#ffffff').replace('<svg ', "<svg opacity='0.08' "));
+const WM_BG_ONLIGHT = svgUri(wm('#0d5b3e').replace('<svg ', "<svg opacity='0.07' "));
+const MOTIF_BG_LIGHT= svgUri(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${MOTIF.chev('rgba(108,197,192,0.12)')}</svg>`);
+const MOTIF_BG_DARK = svgUri(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>${MOTIF.nested('rgba(13,91,62,0.08)')}</svg>`);
+const BG_OPTS=[{v:'wordmark',l:'Wordmark'},{v:'pattern',l:'Pattern'},{v:'motif',l:'Motif'},{v:'none',l:'None'}];
+function panelBgClass(b, tint, pc){
+  const t=(b&&b.pattern)||'wordmark';
+  if(t==='none') return '';
+  if(t==='wordmark'||t==='motif') return `bgp-${t} ${tint==='light'?'pt-light':'pt-dark'}`;
+  if(t==='pattern') return `bgp-pattern ${pc}`;
+  return '';
+}
+(function injectBgStyles(){
+  const P="url('../brand/Foundry_Pattern.jpg')";
+  const css=`
+  .bgp-wordmark{background-repeat:no-repeat;background-position:50% 50%;background-size:80%;}
+  .bgp-wordmark.pt-light{background-image:${WM_BG_ONDARK};}
+  .bgp-wordmark.pt-dark{background-image:${WM_BG_ONLIGHT};}
+  .bgp-pattern{background-repeat:no-repeat,repeat;background-position:center;background-size:cover,150px;}
+  .bgp-pattern.pc-green{background-image:linear-gradient(${hexA('#0d5b3e',.9)},${hexA('#0d5b3e',.9)}),${P};}
+  .bgp-pattern.pc-forest{background-image:linear-gradient(${hexA('#063d2a',.9)},${hexA('#063d2a',.9)}),${P};}
+  .bgp-pattern.pc-paper{background-image:linear-gradient(${hexA('#f7f4ec',.92)},${hexA('#f7f4ec',.92)}),${P};}
+  .bgp-motif{background-repeat:no-repeat;background-position:right -4px top -2px;background-size:40%;}
+  .bgp-motif.pt-light{background-image:${MOTIF_BG_LIGHT};}
+  .bgp-motif.pt-dark{background-image:${MOTIF_BG_DARK};}`;
+  const s=document.createElement('style'); s.textContent=css; document.head.appendChild(s);
+})();
+
 /* ============================ default content ============================ */
 function defaults(){ return {
   global:{
@@ -638,27 +675,27 @@ function cHeader(side){
   return `<div class="hdrgreen">${patBand(prow)}
     <div class="band"><div class="gco"></div>${inner}<div class="rule"></div></div></div>`;
 }
-function cHeroS1(){
-  return `<div class="gpanel"><div class="gco c1"></div><div class="gco c2"></div>
+function cHeroS1(b){
+  return `<div class="gpanel ${panelBgClass(b,'light','pc-green')}"><div class="gco c1"></div><div class="gco c2"></div>
     <div class="lbl">${fmt(S.heroLabel)}</div><div class="big">${fmt(S.heroTitle)}</div><p>${fmt(S.heroBody)}</p></div>`;
 }
-function cMore(){
-  return `<div class="more" style="${motifBg('nested','rgba(13,91,62,0.06)','right -6px bottom -8px','44%')}"><p>${fmt(S.moreBody)} <span class="free">${fmt(S.moreBadge)}</span></p></div>`;
+function cMore(b){
+  return `<div class="more ${panelBgClass(b,'dark','pc-paper')}"><p>${fmt(S.moreBody)} <span class="free">${fmt(S.moreBadge)}</span></p></div>`;
 }
-function cCaps(){
+function cCaps(b){
   const cells=S.caps.map((l,i)=>{
     const im=(S.capImgs&&S.capImgs[i])||'';
     const glyph= im ? `<img src="${im}" alt="">` : `<svg viewBox="0 0 24 24" fill="none">${ICONS[i]||''}</svg>`;
     return `<div class="cap"><i>${glyph}</i><span>${esc(l)}</span></div>`;
   }).join('');
-  return `<div class="caps" style="${motifBg('chev','rgba(108,197,192,0.10)','right -4px top -2px','38%')}"><div class="ct2">${fmt(S.capsTitle)}</div><div class="capgrid">${cells}</div></div>`;
+  return `<div class="caps ${panelBgClass(b,'light','pc-forest')}"><div class="ct2">${fmt(S.capsTitle)}</div><div class="capgrid">${cells}</div></div>`;
 }
-function cFlow(){
+function cFlow(b){
   const steps=S.steps.map((s,i)=>`<div class="step"><div class="n">${i+1}</div><h4>${esc(s.h)}</h4><p>${esc(s.p)}</p>${i<S.steps.length-1?'<span class="arr">›</span>':''}</div>`).join('');
-  return `<div class="flow" style="${motifBg('fan','rgba(127,166,83,0.14)','right top','42%')}"><div class="ft">${fmt(S.flowTitle)}</div><div class="steps">${steps}</div></div>`;
+  return `<div class="flow ${panelBgClass(b,'dark','pc-paper')}"><div class="ft">${fmt(S.flowTitle)}</div><div class="steps">${steps}</div></div>`;
 }
-function cQr(){
-  return `<div class="qrow"><div class="qco"></div>${qrBox('m', S.qrUrl)}<div class="qt"><small>${fmt(S.qrSmall)}</small><b>${fmt(S.qrTitle)}</b>${esc(S.qrUrl)}</div></div>`;
+function cQr(b){
+  return `<div class="qrow ${panelBgClass(b,'light','pc-green')}"><div class="qco"></div>${qrBox('m', S.qrUrl)}<div class="qt"><small>${fmt(S.qrSmall)}</small><b>${fmt(S.qrTitle)}</b>${esc(S.qrUrl)}</div></div>`;
 }
 function parseEv(lines){
   return String(lines||'').split('\n').filter(x=>x.trim()).map(line=>{
@@ -679,9 +716,9 @@ function cWhiteboard(){
     <div class="scrawl">${esc(S.wbMain)}<small>${esc(S.wbNote)}</small><span class="gr">${esc(S.wbGood)}</span></div>
     <span class="marker b"></span><span class="marker g"></span><span class="marker o"></span><span class="tray"></span></div>`;
 }
-function cInfo(){
+function cInfo(b){
   const rows=S.info.map(r=>`<div class="ir"><span class="pill ${r.cls}">${esc(r.pill)}</span><p>${fmt(r.p)}</p></div>`).join('');
-  return `<div class="info" style="${motifBg('tri','rgba(108,197,192,0.10)','left top','46%')}"><div class="ih">${fmt(S.infoTitle)}</div>${rows}</div>`;
+  return `<div class="info ${panelBgClass(b,'light','pc-forest')}"><div class="ih">${fmt(S.infoTitle)}</div>${rows}</div>`;
 }
 function cPoster(i){
   const p=S.posters[i]; const cls=i===0?'p1':'p2';
@@ -692,8 +729,8 @@ function cPoster(i){
   return `<div class="poster ${cls}"><div><div class="pdate">${esc(p.date)}</div><div class="pband"></div></div><div class="ph">${fmt(p.title)}</div>${pq}</div>`;
 }
 function cPosters(){ return `<div class="posters">${cPoster(0)}${cPoster(1)}</div>`; }
-function cHeroS3(){
-  return `<div class="gpanel"><div class="gco c1"></div><div class="gco c2"></div>
+function cHeroS3(b){
+  return `<div class="gpanel ${panelBgClass(b,'light','pc-green')}"><div class="gco c1"></div><div class="gco c2"></div>
     <div class="lbl">${fmt(S.heroLabel)}</div><div class="big">${fmt(S.heroTitle)}</div><p>${fmt(S.heroBody)}</p>
     <div class="where">${APRON}<span>${esc(S.whereCue)}</span></div></div>`;
 }
@@ -711,8 +748,8 @@ function cShift(){
   return `<div><div class="sectionhdr"><span class="dotlive"></span><span class="sht">${fmt(S.shiftTitle)}</span><span class="shsub">${esc(S.shiftSub)}</span></div>
     <div class="plaquerow"><div class="rowrail"></div>${plaque(0)}${plaque(1)}${plaque(2)}</div></div>`;
 }
-function cTrain(){
-  return `<div class="train" style="${motifBg('quarter','rgba(108,197,192,0.12)','right bottom','40%')}"><div class="tinfo"><div class="tlbl">${fmt(S.trainLabel)}</div><div class="tbig">${fmt(S.trainTitle)}</div><p>${fmt(S.trainBody)}</p></div>${qrBox('s', S.trainQrUrl)}</div>`;
+function cTrain(b){
+  return `<div class="train ${panelBgClass(b,'dark','pc-paper')}"><div class="tinfo"><div class="tlbl">${fmt(S.trainLabel)}</div><div class="tbig">${fmt(S.trainTitle)}</div><p>${fmt(S.trainBody)}</p></div>${qrBox('s', S.trainQrUrl)}</div>`;
 }
 function cFooter(side){
   const prow = side==='s1'?1 : side==='s2'?3 : 5;
@@ -730,29 +767,29 @@ function cFooter(side){
 /* ---- addable section types (live anywhere; content stored in the block itself) ---- */
 function cTextBlock(b){
   const h = (b.title&&b.title.trim()) ? `<h5>${fmt(b.title)}</h5>` : '';
-  return `<div class="tblock" style="${motifBg('diamond','rgba(13,91,62,0.06)','right -8px bottom -8px','40%')}">${h}<p>${fmt(b.body||'')}</p></div>`;
+  return `<div class="tblock ${panelBgClass(b,'dark','pc-paper')}">${h}<p>${fmt(b.body||'')}</p></div>`;
 }
 function cCustomQr(b){
-  return `<div class="qrow"><div class="qco"></div>${qrBox('m', b.url)}<div class="qt"><small>${fmt(b.eyebrow||'')}</small><b>${fmt(b.title||'')}</b>${esc(b.url||'')}</div></div>`;
+  return `<div class="qrow ${panelBgClass(b,'light','pc-green')}"><div class="qco"></div>${qrBox('m', b.url)}<div class="qt"><small>${fmt(b.eyebrow||'')}</small><b>${fmt(b.title||'')}</b>${esc(b.url||'')}</div></div>`;
 }
 
 /* ============================ blocks + faces ============================ */
 // Each modular section type: how to render it and how to wrap it in the stack.
 const BLOCKS={
-  heroS1:    {label:'Hero',             wrap:'mount',   render:()=>cHeroS1()},
-  more:      {label:'“What it is”',     wrap:'mount',   render:()=>cMore()},
-  caps:      {label:'Capabilities',     wrap:'mount',   render:()=>cCaps()},
-  flow:      {label:'Concept → product',wrap:'mount',   render:()=>cFlow()},
-  qr:        {label:'Get-started QR',   wrap:'mount',   render:()=>cQr()},
+  heroS1:    {label:'Hero',             wrap:'mount',   bg:true, render:b=>cHeroS1(b)},
+  more:      {label:'“What it is”',     wrap:'mount',   bg:true, render:b=>cMore(b)},
+  caps:      {label:'Capabilities',     wrap:'mount',   bg:true, render:b=>cCaps(b)},
+  flow:      {label:'Concept → product',wrap:'mount',   bg:true, render:b=>cFlow(b)},
+  qr:        {label:'Get-started QR',   wrap:'mount',   bg:true, render:b=>cQr(b)},
   calendar:  {label:'Weekly calendar',  wrap:'calwrap', render:()=>`<div class="holder">${cCalSheet()}</div>`},
   whiteboard:{label:'Whiteboard',       wrap:'wb',      render:()=>cWhiteboard()},
-  info:      {label:'Using the space',  wrap:'mount',   render:()=>cInfo()},
+  info:      {label:'Using the space',  wrap:'mount',   bg:true, render:b=>cInfo(b)},
   posters:   {label:'Event posters',    wrap:'posters', render:()=>cPoster(0)+cPoster(1)},
-  heroS3:    {label:'Find a Scout',     wrap:'mount',   render:()=>cHeroS3()},
+  heroS3:    {label:'Find a Scout',     wrap:'mount',   bg:true, render:b=>cHeroS3(b)},
   shift:     {label:'Scouts on shift',  wrap:'bare',    render:()=>cShift()},
-  train:     {label:'Get trained',      wrap:'mount',   render:()=>cTrain()},
-  text:      {label:'Text box',         wrap:'mount',   addable:true, render:b=>cTextBlock(b)},
-  customqr:  {label:'Custom QR card',   wrap:'mount',   addable:true, render:b=>cCustomQr(b)},
+  train:     {label:'Get trained',      wrap:'mount',   bg:true, render:b=>cTrain(b)},
+  text:      {label:'Text box',         wrap:'mount',   bg:true, addable:true, render:b=>cTextBlock(b)},
+  customqr:  {label:'Custom QR card',   wrap:'mount',   bg:true, addable:true, render:b=>cCustomQr(b)},
 };
 const ADDABLE=['text','customqr'];
 function wrapBlock(wrap, inner, mb){
@@ -868,6 +905,11 @@ function secBody(b){
     `<input class="secfld" data-secid="${b.id}" data-secfield="url" value="${escAttr(b.url||'')}" placeholder="URL → live QR"></div>`;
   return '';
 }
+function bgSelect(b){
+  const cur=b.pattern||'wordmark';
+  return `<div class="secopt"><span>Background</span><select data-secbg="${b.id}">`+
+    BG_OPTS.map(o=>`<option value="${o.v}"${o.v===cur?' selected':''}>${o.l}</option>`).join('')+`</select></div>`;
+}
 function secManager(side){
   const L=state[side].layout||[];
   const items=L.map(b=>{
@@ -877,7 +919,7 @@ function secManager(side){
       `<input type="checkbox" data-sectog="${b.id}" ${b.on?'checked':''} title="Show / hide">`+
       `<span class="secname">${def.label}${def.addable?' <em>(added)</em>':''}</span>`+
       (def.addable?`<button type="button" class="secdel" data-secdel="${b.id}" title="Remove section">✕</button>`:'')+
-      `</div>${secBody(b)}</div>`;
+      `</div>${secBody(b)}${def.bg?bgSelect(b):''}</div>`;
   }).join('');
   return `<div class="secmgr">${items}`+
     `<select class="secadd" data-secadd><option value="">+ Add a section…</option>`+
@@ -1048,6 +1090,11 @@ editorEl.addEventListener('change', e=>{
   if(t.dataset.sectog!==undefined && t.type==='checkbox'){
     const b=(state[ui.side].layout||[]).find(x=>x.id===t.dataset.sectog);
     if(b){ b.on=t.checked; persist(); renderPreview(); renderTargetSelect(); }
+    return;
+  }
+  if(t.dataset.secbg!==undefined){
+    const b=(state[ui.side].layout||[]).find(x=>x.id===t.dataset.secbg);
+    if(b){ b.pattern=t.value; persist(); renderPreview(); }
     return;
   }
   if(t.dataset.secadd!==undefined){ const v=t.value; t.value=''; addSection(ui.side, v); }
