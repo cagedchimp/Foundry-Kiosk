@@ -1024,6 +1024,12 @@ function secBody(b){
     `<input class="secfld" data-secid="${b.id}" data-secfield="qr" value="${escAttr(b.qr||'')}" placeholder="QR target (optional — overrides what the QR encodes)"></div>`;
   return '';
 }
+function secMoveRow(b, side){
+  const names={s1:'Side 1 · The Foundry',s2:'Side 2 · What’s Happening',s3:'Side 3 · Need Help?'};
+  const others=['s1','s2','s3'].filter(s=>s!==side);
+  return `<div class="secopt"><span>Move to</span><select data-secmove="${b.id}"><option value="">Pick a side…</option>`+
+    others.map(s=>`<option value="${s}">${names[s]}</option>`).join('')+`</select></div>`;
+}
 function bgSelect(b){
   const cur=b.pattern||'wordmark';
   const color=b.color||'';
@@ -1042,7 +1048,7 @@ function secManager(side){
       `<span class="secname">${def.label}${def.addable?' <em>(added)</em>':''}</span>`+
       (def.hasHeader?`<label class="hdrtog" title="Show this section's header label"><input type="checkbox" data-sechdr="${b.id}" ${b.header===false?'':'checked'}>Hdr</label>`:'')+
       (def.addable?`<button type="button" class="secdel" data-secdel="${b.id}" title="Remove section">✕</button>`:'')+
-      `</div>${secBody(b)}${def.bg?bgSelect(b):''}</div>`;
+      `</div>${secBody(b)}${def.bg?bgSelect(b):''}${def.addable?secMoveRow(b,side):''}</div>`;
   }).join('');
   return `<div class="secmgr">${items}`+
     `<select class="secadd" data-secadd><option value="">+ Add a section…</option>`+
@@ -1235,6 +1241,18 @@ editorEl.addEventListener('change', e=>{
   if(t.dataset.sechdr!==undefined && t.type==='checkbox'){
     const b=(state[ui.side].layout||[]).find(x=>x.id===t.dataset.sechdr);
     if(b){ b.header=t.checked; persist(); renderPreview(); }
+    return;
+  }
+  if(t.dataset.secmove!==undefined){
+    const target=t.value; t.value='';
+    if(target && target!==ui.side){
+      const L=state[ui.side].layout; const i=L.findIndex(x=>x.id===t.dataset.secmove);
+      if(i>=0){ const [blk]=L.splice(i,1); (state[target].layout||(state[target].layout=[])).push(blk); persist();
+        ui.tab=target; ui.side=target; ui.target='face';
+        document.querySelectorAll('#tabs .tab').forEach(tb=>tb.classList.toggle('on', tb.dataset.tab===ui.tab));
+        renderAll();
+      }
+    }
     return;
   }
   if(t.dataset.secadd!==undefined){ const v=t.value; t.value=''; addSection(ui.side, v); }
