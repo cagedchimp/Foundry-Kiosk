@@ -113,9 +113,12 @@ inside an otherwise left-aligned section.
 > **A−** if it still wraps.
 
 ## Text formatting
-- `*word*` → gold emphasis  ·  `**word**` → bold  ·  line breaks split lines. While you're
-  editing a piece of text on the preview it shows these raw markers; click away and it
-  renders. (The markers never reach the PDF.)
+- `*word*` → gold emphasis  ·  `**word**` → bold. While you're editing a piece of text on
+  the preview it shows these raw markers; click away and it renders. (The markers never
+  reach the PDF.)
+- **Line breaks and paragraphs:** press **Enter** for a new line, and **Enter twice** to
+  leave a blank line between paragraphs — the way to break longer copy up. This works both
+  in the preview and in the boxes on the left, and blank lines carry into the PDF.
 - **Calendar events:** one per line as `type:text`, where `type` is `r` reserved (gold),
   `t` class (teal), `s` event (sage), `g` closed (green). e.g. `r:9a Wood hold`.
 - **Open Scout cleat:** leave a Scout's *name* blank to render that slot as an empty cleat.

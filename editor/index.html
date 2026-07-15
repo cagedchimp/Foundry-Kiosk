@@ -397,6 +397,17 @@
   /* ---- click-to-edit: affordances live only on the on-screen preview; print output is clean ---- */
   /* pre-wrap so a literal \n typed into the raw text shows as a line break while editing */
   .ed{white-space:pre-wrap;border-radius:2px;cursor:text;}
+  /* CSS drops a block's FINAL line break, so pressing Enter at the end of a field rendered
+     nothing at all — it looked like blank lines weren't supported, when in fact you had to
+     press Enter twice before the first one appeared. A zero-width space after the content
+     gives that last break something to sit in front of, so Enter responds immediately.
+     .ed only exists on the preview, so this never reaches the PDF (and a trailing blank line
+     would mean nothing there anyway). Pseudo-elements aren't child nodes, so :empty — and
+     therefore the placeholder — still works, and textContent stays clean. */
+  .ed::after{content:"\200B";}
+  /* esc()-only fields keep newlines as literal \n, so they need pre-wrap on the print render
+     too — otherwise a break visible on screen would vanish in the PDF. */
+  .nlpw{white-space:pre-wrap;}
   .ed:hover{outline:1px dashed rgba(242,180,23,.85);outline-offset:1.5px;}
   .ed:focus{outline:1.5px solid var(--gold);outline-offset:1.5px;background:rgba(242,180,23,.10);}
   /* placeholder for an emptied field — :empty only matches with no child nodes at all */
@@ -896,6 +907,10 @@ function E(cls,key,ph,opts){
   opts=opts||{};
   const fx=fxBits(key);
   let cl=[cls,fx.cls].filter(Boolean).join(' ');
+  // Raw fields render through esc(), which leaves newlines as literal \n. .ed carries
+  // white-space:pre-wrap so they show while editing, but .ed is preview-only — without this
+  // the same break would collapse to a space in the PDF. Keep the two in agreement.
+  if(opts.raw) cl=[cl,'nlpw'].filter(Boolean).join(' ');
   const st=fx.style?` style="${fx.style}"`:'';
   if(!EDIT) return (cl?` class="${cl}"`:'')+st;                 // print: styling yes, editing no
   cl=[cl,'ed'].filter(Boolean).join(' ');
