@@ -1451,20 +1451,36 @@ stageEl.addEventListener('input', e=>{
   syncPanel(key, el.textContent);
   updateFmtBar();
 });
-// Enter must insert a literal newline into the text node. The browser's default (a <br> or a
-// nested <div>) would be invisible to el.textContent, so the line break would be lost on save.
+// Insert text at the caret by rewriting the field's raw text.
+// We cannot use execCommand('insertText', '\n'): Chrome does not insert a literal newline, it
+// splits the field into a <div> ("a<div>b</div>"). textContent cannot see that, so the break
+// was silently dropped on save and the copy collapsed back to one line. Rewriting the whole
+// string also keeps the field a single text node, which the toolbar's offset maths relies on.
+// Trade-off: this bypasses the browser's native undo stack for these two operations.
+function insertAtCaret(el, text){
+  const o=selOffsets(el); if(!o) return;
+  const t=el.textContent;
+  const next=t.slice(0,o.start)+text+t.slice(o.end);
+  el.textContent=next;
+  const c=o.start+text.length;
+  setSel(el,c,c);
+  edWrite(el.dataset.ed,next); persist(); syncPanel(el.dataset.ed,next);
+  updateFmtBar();
+}
 stageEl.addEventListener('keydown', e=>{
   const el=e.target.closest && e.target.closest('.ed');
   if(!el) return;
   if(e.key==='Escape'){ el.blur(); return; }
-  if(e.key==='Enter'){ e.preventDefault(); document.execCommand('insertText',false,'\n'); }
+  if(e.key==='Enter'){ e.preventDefault(); insertAtCaret(el,'\n'); }
 });
-// Paste as plain text — pasting styled HTML into the preview would inject foreign markup.
+// Paste as plain text — pasting styled HTML into the preview would inject foreign markup,
+// and multi-line pastes hit the same execCommand problem as Enter.
 stageEl.addEventListener('paste', e=>{
   const el=e.target.closest && e.target.closest('.ed');
   if(!el) return;
   e.preventDefault();
-  document.execCommand('insertText',false,(e.clipboardData||window.clipboardData).getData('text'));
+  const txt=(e.clipboardData||window.clipboardData).getData('text').replace(/\r\n?/g,'\n');
+  insertAtCaret(el, txt);
 });
 
 /* ---- selection toolbar: writes the *gold* / **bold** markers for you ---- */
