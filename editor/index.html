@@ -148,15 +148,20 @@
   .toprow .tt{width:9px;height:9px;flex:0 0 auto;overflow:hidden;}
   .toprow .tt svg{display:block;width:100%;height:100%;}
   /* Real brand pattern band: brand/Foundry_Pattern.jpg, an 8x6 grid of square ~158.67px
-     tiles = 1269x952. The file used to ship 1288px wide, with a 19px near-white export
+     tiles = 1269x952. The file used to ship 1288px wide with a ~19px near-white export
      margin down its right edge; repeat-x tiled that margin into a white line every ~73px,
-     which is what showed up in this band and in the footer. The margin is now cropped off.
-     Size is pinned to 72x54 (8 cols x 9px, 6 rows x 9px) rather than `auto 54px`, which
-     resolves to 71.98px — that fraction put every seam on a sub-pixel boundary and rounded
-     into a hairline, worst under the print zoom (11.46x). --prow (0..5) picks a row. */
+     in this band and in the footer. Cropping the asset is what fixed those lines.
+     KEEP `auto 54px`. It was briefly pinned to `72px 54px` to force seams onto whole pixels,
+     which broke the PDF export: with an explicit tile width, Chrome's print rasteriser paints
+     the tile at the zoomed size (72 * 11.46 = 825px) but appears to count repeats against the
+     unzoomed band (198px), so 198/825 < 1 and only ONE tile lands — the rest of the band fell
+     back to bare --forest. `auto` derives the width from the intrinsic aspect at paint time
+     and tiles across correctly. The resulting 71.98px width does put seams on a sub-pixel
+     boundary, but with the white margin gone that seam is dark-on-dark and invisible.
+     --prow (0..5) picks which tile row shows. */
   .patband{height:9px;width:100%;overflow:hidden;background:var(--forest);
     background-image:url('../brand/Foundry_Pattern.jpg');
-    background-size:72px 54px; background-repeat:repeat-x;
+    background-size:auto 54px; background-repeat:repeat-x;
     background-position-x:0; background-position-y:calc(var(--prow,0) * -9px);}
   .hdrgreen{background:var(--green);border-radius:6px;overflow:hidden;position:relative;}
   .hdrgreen .band{padding:9px 10px 10px;text-align:center;position:relative;}
