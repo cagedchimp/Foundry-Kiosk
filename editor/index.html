@@ -386,6 +386,31 @@
   /* panels rendered standalone get a hair of breathing room */
   .frame.panel{padding:0;}
   @media (max-width:880px){ .app{grid-template-columns:1fr;grid-template-rows:52px auto 1fr;} .editor{max-height:38vh;} }
+
+  /* ---- click-to-edit: affordances live only on the on-screen preview; print output is clean ---- */
+  /* pre-wrap so a literal \n typed into the raw text shows as a line break while editing */
+  .ed{white-space:pre-wrap;border-radius:2px;cursor:text;}
+  .ed:hover{outline:1px dashed rgba(242,180,23,.85);outline-offset:1.5px;}
+  .ed:focus{outline:1.5px solid var(--gold);outline-offset:1.5px;background:rgba(242,180,23,.10);}
+  /* placeholder for an emptied field — :empty only matches with no child nodes at all */
+  .ed:empty:before{content:attr(data-ph);opacity:.45;font-style:italic;}
+  /* the caret is nearly invisible at small preview zoom on dark panels; give it a hint of weight */
+  .ed:focus{caret-color:var(--gold);}
+
+  /* ---- section text alignment (per block; !important beats the components' baked-in text-align) ---- */
+  .al-left,   .al-left *  {text-align:left   !important;}
+  .al-center, .al-center *{text-align:center !important;}
+  .al-right,  .al-right * {text-align:right  !important;}
+
+  /* ---- floating bold/gold toolbar ---- */
+  .fmtbar{position:fixed;z-index:60;display:none;gap:2px;padding:3px;background:#12261e;border:1px solid #2f4d3f;
+          border-radius:7px;box-shadow:0 6px 18px rgba(0,0,0,.45);}
+  .fmtbar.on{display:flex;}
+  .fmtbar button{font:inherit;font-size:11px;font-weight:800;line-height:1;padding:5px 8px;border-radius:5px;
+                 border:0;background:transparent;color:#e8f0ea;cursor:pointer;white-space:nowrap;}
+  .fmtbar button:hover{background:#24443a;}
+  .fmtbar button .sw{color:var(--gold);}
+  .fmtbar .sep{width:1px;background:#2f4d3f;margin:2px 1px;}
 </style>
 </head>
 <body>
@@ -422,6 +447,14 @@
   </section>
 </div>
 <div id="printroot"></div>
+<!-- Selection toolbar for click-to-edit text: writes the *gold* / **bold** markers so
+     nobody has to learn the marker syntax. Shown only for formatted fields. -->
+<div class="fmtbar" id="fmtbar">
+  <button type="button" data-wrap="**" title="Bold"><b>B</b></button>
+  <button type="button" data-wrap="*" title="Gold emphasis"><span class="sw">Gold</span></button>
+  <div class="sep"></div>
+  <button type="button" data-unwrap title="Remove formatting">Clear</button>
+</div>
 <input type="file" id="fileinput" accept="application/json" style="display:none">
 <input type="file" id="imginput" accept="image/*" style="display:none">
 
@@ -778,46 +811,94 @@ function fmt(s){
 }
 
 /* ============================ components ============================ */
-let S=null, G=null; // set per render
+let S=null, G=null, SIDE='s1'; // set per render
+// EDIT is true only while rendering the on-screen preview. Print/export renders with it
+// false, so the exported markup carries no contenteditable/affordance cruft.
+let EDIT=false;
+
+/* ---- click-to-edit plumbing ----------------------------------------------
+   An editable node is tagged with data-ed="<key>". A key is either a state dot-path
+   ("s1.heroTitle", "s1.steps.0.h") or "blk:<blockId>:<field>" for copy that lives on a
+   layout block. Reads/writes go through the same get/set the left-hand panel uses, so the
+   two stay in sync.
+   While a node is focused it holds RAW text (markers visible, newlines as real \n chars);
+   on blur it is re-rendered through fmt()/esc(). Crucially the preview is never rebuilt on
+   a keystroke — that would destroy the caret. */
+function findBlk(id){
+  for(const s of ['s1','s2','s3']){
+    const b=(state[s].layout||[]).find(x=>x.id===id);
+    if(b) return b;
+  }
+  return null;
+}
+function edRead(key){
+  if(key.startsWith('blk:')){ const p=key.split(':'), b=findBlk(p[1]); return b?(b[p[2]]||''):''; }
+  const v=get(key); return v==null?'':String(v);
+}
+function edWrite(key,val){
+  if(key.startsWith('blk:')){ const p=key.split(':'), b=findBlk(p[1]); if(b) b[p[2]]=val; return; }
+  set(key,val);
+}
+// Attribute string for a leaf element. cls = the element's existing class list ('' for none).
+// opts.raw   -> field is esc()-only (no *gold*/**bold**); the toolbar stays hidden.
+// opts.struct-> emptying/filling this field changes the layout, so re-render on blur.
+function E(cls,key,ph,opts){
+  opts=opts||{};
+  if(!EDIT) return cls?` class="${cls}"`:'';
+  return ` class="${cls?cls+' ':''}ed" contenteditable="true" data-ed="${escAttr(key)}"`+
+         (ph?` data-ph="${escAttr(ph)}"`:'')+
+         (opts.raw?' data-raw="1"':'')+
+         (opts.struct?' data-struct="1"':'');
+}
+// Re-render an edited node's raw text back to display HTML (mirrors how it was authored).
+function edPaint(el){
+  const raw=edRead(el.dataset.ed);
+  el.innerHTML = el.dataset.raw ? esc(raw) : fmt(raw);
+}
+// path of a field on the side currently being rendered
+function p(field){ return SIDE+'.'+field; }
+
 // optional editable header bar for tiles that don't have a built-in header
 function tileHeader(b){
-  return (b && b.header!==false && b.headerText && b.headerText.trim()) ? `<div class="tilehdr">${fmt(b.headerText)}</div>` : '';
+  return (b && b.header!==false && b.headerText && b.headerText.trim()) ? `<div${E('tilehdr','blk:'+b.id+':headerText','Header label')}>${fmt(b.headerText)}</div>` : '';
 }
 function cHeader(side){
   const prow = side==='s1'?0 : side==='s2'?2 : 4;
   const inner = side==='s1'
-    ? `<div class="wmwrap">${wm('#FFFFFF')}</div><div class="eyebrow" style="margin-top:9px;">${fmt(S.eyebrow)}</div>`
-    : `<div class="eyebrow">${fmt(S.eyebrow)}</div><h3>${fmt(S.title)}</h3>`;
+    ? `<div class="wmwrap">${wm('#FFFFFF')}</div><div${E('eyebrow',p('eyebrow'),'Eyebrow')} style="margin-top:9px;">${fmt(S.eyebrow)}</div>`
+    : `<div${E('eyebrow',p('eyebrow'),'Eyebrow')}>${fmt(S.eyebrow)}</div><h3${E('',p('title'),'Title')}>${fmt(S.title)}</h3>`;
   return `<div class="hdrgreen">${patBand(prow)}
     <div class="band">${inner}<div class="rule"></div></div></div>`;
 }
 function cHeroS1(b){
   const T=panelColor(b,'green');
-  return `<div class="gpanel ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}<div class="lbl">${fmt(S.heroLabel)}</div><div class="big">${fmt(S.heroTitle)}</div><p>${fmt(S.heroBody)}</p></div>`;
+  return `<div class="gpanel ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}<div${E('lbl',p('heroLabel'),'Label')}>${fmt(S.heroLabel)}</div><div${E('big',p('heroTitle'),'Headline')}>${fmt(S.heroTitle)}</div><p${E('',p('heroBody'),'Body copy')}>${fmt(S.heroBody)}</p></div>`;
 }
 function cMore(b){
   const T=panelColor(b,'paper');
-  return `<div class="more ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}<p>${fmt(S.moreBody)} <span class="free">${fmt(S.moreBadge)}</span></p></div>`;
+  // the <p> mixes two fields, so each gets its own editable span rather than the paragraph
+  return `<div class="more ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}<p><span${E('',p('moreBody'),'Body copy')}>${fmt(S.moreBody)}</span> <span${E('free',p('moreBadge'),'Badge')}>${fmt(S.moreBadge)}</span></p></div>`;
 }
 function cCaps(b){
   const cells=S.caps.map((l,i)=>{
     const im=(S.capImgs&&S.capImgs[i])||'';
     const glyph= im ? `<img src="${im}" alt="">` : `<svg viewBox="0 0 24 24" fill="none">${ICONS[i]||''}</svg>`;
-    return `<div class="cap"><i>${glyph}</i><span>${esc(l)}</span></div>`;
+    return `<div class="cap"><i>${glyph}</i><span${E('',p('caps.'+i),'Label',{raw:1})}>${esc(l)}</span></div>`;
   }).join('');
   const T=panelColor(b,'forest');
-  const hdr = (b&&b.header===false) ? '' : `<div class="ct2">${fmt(S.capsTitle)}</div>`;
+  const hdr = (b&&b.header===false) ? '' : `<div${E('ct2',p('capsTitle'),'Section title')}>${fmt(S.capsTitle)}</div>`;
   return `<div class="caps ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${hdr}<div class="capgrid">${cells}</div></div>`;
 }
 function cFlow(b){
-  const steps=S.steps.map((s,i)=>`<div class="step"><div class="n">${i+1}</div><h4>${esc(s.h)}</h4><p>${esc(s.p)}</p>${i<S.steps.length-1?'<span class="arr">›</span>':''}</div>`).join('');
+  const steps=S.steps.map((s,i)=>`<div class="step"><div class="n">${i+1}</div><h4${E('',p('steps.'+i+'.h'),'Step',{raw:1})}>${esc(s.h)}</h4><p${E('',p('steps.'+i+'.p'),'Detail',{raw:1})}>${esc(s.p)}</p>${i<S.steps.length-1?'<span class="arr">›</span>':''}</div>`).join('');
   const T=panelColor(b,'paper');
-  const hdr = (b&&b.header===false) ? '' : `<div class="ft">${fmt(S.flowTitle)}</div>`;
+  const hdr = (b&&b.header===false) ? '' : `<div${E('ft',p('flowTitle'),'Section title')}>${fmt(S.flowTitle)}</div>`;
   return `<div class="flow ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${hdr}<div class="steps">${steps}</div></div>`;
 }
 function cQr(b){
   const T=panelColor(b,'green');
-  return `<div class="qrow ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}${qrBox('m', S.qrUrl)}<div class="qt"><small>${fmt(S.qrSmall)}</small><b>${fmt(S.qrTitle)}</b>${esc(S.qrUrl)}</div></div>`;
+  // the URL stays panel-only: it drives the QR bitmap, which can't re-render mid-keystroke
+  return `<div class="qrow ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}${qrBox('m', S.qrUrl)}<div class="qt"><small${E('',p('qrSmall'),'Eyebrow')}>${fmt(S.qrSmall)}</small><b${E('',p('qrTitle'),'Title')}>${fmt(S.qrTitle)}</b>${esc(S.qrUrl)}</div></div>`;
 }
 function parseEv(lines){
   return String(lines||'').split('\n').filter(x=>x.trim()).map(line=>{
@@ -828,22 +909,23 @@ function parseEv(lines){
 }
 function cCalSheet(){
   const land = S.calOrient==='landscape';
-  const days=S.cal.map(day=>`<div class="gday"><div class="gd">${esc(day.d)}</div><div class="gevs">${parseEv(day.lines)}</div></div>`).join('');
-  return `<div class="sheet${land?' landscape':''}"><div class="sct">${esc(S.calWeekOf)}</div><div class="csub">${esc(S.calSub)}</div>
+  // day.lines uses the r/t/s/g event syntax — structured, so it stays a panel-only field
+  const days=S.cal.map((day,i)=>`<div class="gday"><div${E('gd',p('cal.'+i+'.d'),'Day',{raw:1})}>${esc(day.d)}</div><div class="gevs">${parseEv(day.lines)}</div></div>`).join('');
+  return `<div class="sheet${land?' landscape':''}"><div${E('sct',p('calWeekOf'),'Week of…',{raw:1})}>${esc(S.calWeekOf)}</div><div${E('csub',p('calSub'),'Subtitle',{raw:1})}>${esc(S.calSub)}</div>
     <div class="gcal">${days}</div>
     <div class="ckey"><span><i style="background:#f2b417"></i>Reserved</span><span><i style="background:#6cc5c0"></i>Class</span><span><i style="background:#7fa653"></i>Event</span></div></div>`;
 }
 function cCalendar(){ return `<div class="calwrap"><div class="holder">${cCalSheet()}</div></div>`; }
 function cWhiteboard(b){
-  const tab = (b&&b.header===false) ? '' : `<span class="tab">${esc((b&&b.headerText)||'Whiteboard')}</span>`;
+  const tab = (b&&b.header===false) ? '' : `<span${E('tab','blk:'+b.id+':headerText','Whiteboard',{raw:1})}>${esc((b&&b.headerText)||'Whiteboard')}</span>`;
   return `<div class="wb">${tab}<span class="dim">24×18″</span>
-    <div class="scrawl">${esc(S.wbMain)}<small>${esc(S.wbNote)}</small><span class="gr">${esc(S.wbGood)}</span></div>
+    <div class="scrawl"><span${E('',p('wbMain'),'Main note',{raw:1})}>${esc(S.wbMain)}</span><small${E('',p('wbNote'),'Note',{raw:1})}>${esc(S.wbNote)}</small><span${E('gr',p('wbGood'),'Good-to-know',{raw:1})}>${esc(S.wbGood)}</span></div>
     <span class="marker b"></span><span class="marker g"></span><span class="marker o"></span><span class="tray"></span></div>`;
 }
 function cInfo(b){
-  const rows=S.info.map(r=>`<div class="ir"><span class="pill ${r.cls}">${esc(r.pill)}</span><p>${fmt(r.p)}</p></div>`).join('');
+  const rows=S.info.map((r,i)=>`<div class="ir"><span${E('pill '+r.cls,p('info.'+i+'.pill'),'Pill',{raw:1})}>${esc(r.pill)}</span><p${E('',p('info.'+i+'.p'),'Detail')}>${fmt(r.p)}</p></div>`).join('');
   const T=panelColor(b,'forest');
-  const hdr = (b&&b.header===false) ? '' : `<div class="ih">${fmt(S.infoTitle)}</div>`;
+  const hdr = (b&&b.header===false) ? '' : `<div${E('ih',p('infoTitle'),'Section title')}>${fmt(S.infoTitle)}</div>`;
   return `<div class="info ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${hdr}${rows}</div>`;
 }
 function cPoster(i){
@@ -852,13 +934,13 @@ function cPoster(i){
   const url=(p.qrUrl==null?'':String(p.qrUrl)).trim();
   let pq='<div class="pq"></div>';
   if(url){ try{ pq=`<div class="pq has">${qrSVG(url)}</div>`; }catch(e){} }
-  return `<div class="poster ${cls}"><div><div class="pdate">${esc(p.date)}</div><div class="pband"></div></div><div class="ph">${fmt(p.title)}</div>${pq}</div>`;
+  return `<div class="poster ${cls}"><div><div${E('pdate',SIDE+'.posters.'+i+'.date','Date',{raw:1})}>${esc(p.date)}</div><div class="pband"></div></div><div${E('ph',SIDE+'.posters.'+i+'.title','Poster title')}>${fmt(p.title)}</div>${pq}</div>`;
 }
 function cPosters(){ return `<div class="posters">${cPoster(0)}${cPoster(1)}</div>`; }
 function cHeroS3(b){
   const T=panelColor(b,'green');
-  return `<div class="gpanel ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}<div class="lbl">${fmt(S.hero3Label)}</div><div class="big">${fmt(S.hero3Title)}</div><p>${fmt(S.hero3Body)}</p>
-    <div class="where">${APRON}<span>${esc(S.whereCue)}</span></div></div>`;
+  return `<div class="gpanel ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}<div${E('lbl',p('hero3Label'),'Label')}>${fmt(S.hero3Label)}</div><div${E('big',p('hero3Title'),'Headline')}>${fmt(S.hero3Title)}</div><p${E('',p('hero3Body'),'Body copy')}>${fmt(S.hero3Body)}</p>
+    <div class="where">${APRON}<span${E('',p('whereCue'),'Where to look',{raw:1})}>${esc(S.whereCue)}</span></div></div>`;
 }
 function plaque(i){
   const sc=S.scouts[i]||{init:'',name:'',role:''};
@@ -868,16 +950,16 @@ function plaque(i){
   const face = sc.photo ? `<img class="ph-img" src="${sc.photo}" alt="">` : `<span class="ph-init">${esc(sc.init)}</span>`;
   return `<div class="plaque"><div class="pat">${SCOUT_PAT[i%2]}</div>
     <div class="inner"><div class="photo"><span class="tape"></span>${face}</div>
-    <div class="pname">${esc(sc.name)}</div><div class="ppill">Scout</div><div class="prole"><b>${esc(sc.role)}</b></div></div></div>`;
+    <div${E('pname',p('scouts.'+i+'.name'),'Name',{raw:1,struct:1})}>${esc(sc.name)}</div><div class="ppill">Scout</div><div class="prole"><b${E('',p('scouts.'+i+'.role'),'Role',{raw:1})}>${esc(sc.role)}</b></div></div></div>`;
 }
 function cShift(b){
-  const hdr = (b&&b.header===false) ? '' : `<div class="sectionhdr"><span class="dotlive"></span><span class="sht">${fmt(S.shiftTitle)}</span><span class="shsub">${esc(S.shiftSub)}</span></div>`;
+  const hdr = (b&&b.header===false) ? '' : `<div class="sectionhdr"><span class="dotlive"></span><span${E('sht',p('shiftTitle'),'Section title')}>${fmt(S.shiftTitle)}</span><span${E('shsub',p('shiftSub'),'Subtitle',{raw:1})}>${esc(S.shiftSub)}</span></div>`;
   return `<div>${hdr}
     <div class="plaquerow"><div class="rowrail"></div>${plaque(0)}${plaque(1)}${plaque(2)}</div></div>`;
 }
 function cTrain(b){
   const T=panelColor(b,'paper');
-  return `<div class="train ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}<div class="tinfo"><div class="tlbl">${fmt(S.trainLabel)}</div><div class="tbig">${fmt(S.trainTitle)}</div><p>${fmt(S.trainBody)}</p></div>${qrBox('s', S.trainQrUrl)}</div>`;
+  return `<div class="train ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}<div class="tinfo"><div${E('tlbl',p('trainLabel'),'Label')}>${fmt(S.trainLabel)}</div><div${E('tbig',p('trainTitle'),'Title')}>${fmt(S.trainTitle)}</div><p${E('',p('trainBody'),'Body copy')}>${fmt(S.trainBody)}</p></div>${qrBox('s', S.trainQrUrl)}</div>`;
 }
 function cFooter(side){
   const prow = side==='s1'?1 : side==='s2'?3 : 5;
@@ -887,21 +969,22 @@ function cFooter(side){
   ].join('');
   const right = `<div class="lwmmark">${wm('#FFFFFF')}</div>`; // real vector wordmark on every face
   return `<div class="lowband">${patBand(prow)}
-    <div class="lin"><div class="lleft"><div class="lsoc">${socrows}</div><div class="lhrs">${fmt(G.hours)}</div></div>
+    <div class="lin"><div class="lleft"><div class="lsoc">${socrows}</div><div${E('lhrs','global.hours','Hours')}>${fmt(G.hours)}</div></div>
     <div class="ldiv"></div><div class="lright">${right}</div></div></div>
-    <div class="ftr"><div class="fin"><div class="fmeta">${fmt(G.address)}</div></div></div>`;
+    <div class="ftr"><div class="fin"><div${E('fmeta','global.address','Address / contact')}>${fmt(G.address)}</div></div></div>`;
 }
 
 /* ---- addable section types (live anywhere; content stored in the block itself) ---- */
 function cTextBlock(b){
-  const h = (b.title&&b.title.trim()) ? `<h5>${fmt(b.title)}</h5>` : '';
+  // heading is structural: blanking it drops the <h5> entirely, so re-render on blur
+  const h = (b.title&&b.title.trim()) ? `<h5${E('','blk:'+b.id+':title','Heading',{struct:1})}>${fmt(b.title)}</h5>` : '';
   const T=panelColor(b,'paper');
-  return `<div class="tblock ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${h}<p>${fmt(b.body||'')}</p></div>`;
+  return `<div class="tblock ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${h}<p${E('','blk:'+b.id+':body','Your text…')}>${fmt(b.body||'')}</p></div>`;
 }
 function cCustomQr(b){
   const T=panelColor(b,'green');
   const target=(b.qr&&b.qr.trim()) ? b.qr : b.url; // QR encodes the override if set, else the shown link
-  return `<div class="qrow ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${qrBox('m', target)}<div class="qt"><small>${fmt(b.eyebrow||'')}</small><b>${fmt(b.title||'')}</b>${esc(b.url||'')}</div></div>`;
+  return `<div class="qrow ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${qrBox('m', target)}<div class="qt"><small${E('','blk:'+b.id+':eyebrow','Eyebrow')}>${fmt(b.eyebrow||'')}</small><b${E('','blk:'+b.id+':title','Title')}>${fmt(b.title||'')}</b>${esc(b.url||'')}</div></div>`;
 }
 
 /* ============================ blocks + faces ============================ */
@@ -912,7 +995,7 @@ const BLOCKS={
   caps:      {label:'Capabilities',     wrap:'mount',   bg:true, hasHeader:true, render:b=>cCaps(b)},
   flow:      {label:'Concept → product',wrap:'mount',   bg:true, hasHeader:true, render:b=>cFlow(b)},
   qr:        {label:'Get-started QR',   wrap:'mount',   bg:true, hasHeader:true, editHeaderText:true, render:b=>cQr(b)},
-  calendar:  {label:'Weekly calendar',  wrap:'calwrap', hasHeader:true, editHeaderText:true, render:b=>`<div class="holder">${(b&&b.header===false)?'':`<span class="caltab">${esc((b&&b.headerText)||'Reservations')}</span>`}${cCalSheet()}</div>`},
+  calendar:  {label:'Weekly calendar',  wrap:'calwrap', hasHeader:true, editHeaderText:true, render:b=>`<div class="holder">${(b&&b.header===false)?'':`<span${E('caltab','blk:'+b.id+':headerText','Reservations',{raw:1})}>${esc((b&&b.headerText)||'Reservations')}</span>`}${cCalSheet()}</div>`},
   whiteboard:{label:'Whiteboard',       wrap:'wb',      hasHeader:true, editHeaderText:true, render:b=>cWhiteboard(b)},
   info:      {label:'Using the space',  wrap:'mount',   bg:true, hasHeader:true, render:b=>cInfo(b)},
   posters:   {label:'Event posters',    wrap:'bare',    hasHeader:true, editHeaderText:true, render:b=>`${tileHeader(b)}<div class="posters">${cPoster(0)}${cPoster(1)}</div>`},
@@ -938,18 +1021,21 @@ const BLOCK_FIELDS={
   shift:['shiftTitle','shiftSub','scouts'],
   train:['trainLabel','trainTitle','trainBody','trainQrUrl'],
 };
-function wrapBlock(wrap, inner, mb){
+// b.align: undefined = leave the component's designed alignment alone; otherwise force it.
+function alignCls(b){ return (b && b.align) ? ' al-'+b.align : ''; }
+function wrapBlock(wrap, inner, mb, b){
   const m = mb ? 'margin-bottom:8px;' : '';
-  if(wrap==='wb')      return `<div class="mount" style="${m}box-shadow:0 6px 14px rgba(50,32,10,.3);">${inner}</div>`;
-  if(wrap==='posters') return `<div class="posters" style="${m}">${inner}</div>`;
-  if(wrap==='calwrap') return `<div class="calwrap" style="${m}">${inner}</div>`;
-  if(wrap==='bare')    return `<div style="${m}">${inner}</div>`;
-  return `<div class="mount" style="${m}">${inner}</div>`;
+  const a = alignCls(b);
+  if(wrap==='wb')      return `<div class="mount${a}" style="${m}box-shadow:0 6px 14px rgba(50,32,10,.3);">${inner}</div>`;
+  if(wrap==='posters') return `<div class="posters${a}" style="${m}">${inner}</div>`;
+  if(wrap==='calwrap') return `<div class="calwrap${a}" style="${m}">${inner}</div>`;
+  if(wrap==='bare')    return `<div class="${a.trim()}" style="${m}">${inner}</div>`;
+  return `<div class="mount${a}" style="${m}">${inner}</div>`;
 }
 function mount(html, last){ return `<div class="mount"${last?'':' style="margin-bottom:8px;"'}>${html}</div>`; }
 function faceInner(side){
   const blocks=(state[side].layout||[]).filter(b=>b.on && BLOCKS[b.type]);
-  const mids=blocks.map((b,i)=> wrapBlock(BLOCKS[b.type].wrap, BLOCKS[b.type].render(b), i<blocks.length-1)).join('');
+  const mids=blocks.map((b,i)=> wrapBlock(BLOCKS[b.type].wrap, BLOCKS[b.type].render(b), i<blocks.length-1, b)).join('');
   return mount(cHeader(side)) + mids + `<div class="gap"><div class="ghost">Breathing room</div></div>` + cFooter(side);
 }
 function cFace(side){ return `<div class="ply">${faceInner(side)}</div>`; }
@@ -980,7 +1066,7 @@ function targetsFor(side){
   T.push({id:'footer',label:'Footer band',w:23,r:()=>cFooter(side)});
   return T;
 }
-function setRenderCtx(side){ S=state[side]; G=state.global; }
+function setRenderCtx(side){ S=state[side]; G=state.global; SIDE=side; }
 const FACE_TITLES={s1:'Side 1 · The Foundry',s2:"Side 2 · What's Happening",s3:'Side 3 · Need Help?'};
 function renderAllFaces(){
   const cols=['s1','s2','s3'].map(sd=>{ setRenderCtx(sd); return `<div class="facecol"><div class="facetitle">${FACE_TITLES[sd]}</div>${cFace(sd)}</div>`; }).join('');
@@ -1062,14 +1148,22 @@ function secMoveRow(b, side){
   return `<div class="secopt"><span>Move to</span><select data-secmove="${b.id}"><option value="">Pick a side…</option>`+
     others.map(s=>`<option value="${s}">${names[s]}</option>`).join('')+`</select></div>`;
 }
-function bgSelect(b){
+function bgBits(b){
   const cur=b.pattern||'pattern';
   const color=b.color||'';
-  return `<div class="secopt"><span>Background</span><select data-secbg="${b.id}">`+
+  return `<span>Background</span><select data-secbg="${b.id}">`+
       BG_OPTS.map(o=>`<option value="${o.v}"${o.v===cur?' selected':''}>${o.l}</option>`).join('')+`</select>`+
     `<span>Color</span><select data-seccolor="${b.id}">`+
-      COLOR_OPTS.map(o=>`<option value="${o.v}"${o.v===color?' selected':''}>${o.l}</option>`).join('')+`</select></div>`;
+      COLOR_OPTS.map(o=>`<option value="${o.v}"${o.v===color?' selected':''}>${o.l}</option>`).join('')+`</select>`;
 }
+const ALIGN_OPTS=[{v:'',l:'As designed'},{v:'left',l:'Left'},{v:'center',l:'Center'},{v:'right',l:'Right'}];
+function alignBits(b){
+  const v=b.align||'';
+  return `<span>Text</span><select data-secalign="${b.id}" title="Align this section's text">`+
+    ALIGN_OPTS.map(o=>`<option value="${o.v}"${o.v===v?' selected':''}>${o.l}</option>`).join('')+`</select>`;
+}
+// one options row per section: background/colour where the block supports it, alignment always
+function secOpts(b,def){ return `<div class="secopt">${def.bg?bgBits(b):''}${alignBits(b)}</div>`; }
 function secManager(side){
   const L=state[side].layout||[];
   const items=L.map(b=>{
@@ -1080,7 +1174,7 @@ function secManager(side){
       `<span class="secname">${def.label}${def.addable?' <em>(added)</em>':''}</span>`+
       (def.hasHeader?`<label class="hdrtog" title="Show this section's header label"><input type="checkbox" data-sechdr="${b.id}" ${b.header===false?'':'checked'}>Hdr</label>`:'')+
       (def.addable?`<button type="button" class="secdel" data-secdel="${b.id}" title="Remove section">✕</button>`:'')+
-      `</div>${secBody(b)}${def.editHeaderText?headerTextField(b):''}${def.bg?bgSelect(b):''}${secMoveRow(b,side)}</div>`;
+      `</div>${secBody(b)}${def.editHeaderText?headerTextField(b):''}${secOpts(b,def)}${secMoveRow(b,side)}</div>`;
   }).join('');
   return `<div class="secmgr">${items}`+
     `<select class="secadd" data-secadd><option value="">+ Add a section…</option>`+
@@ -1204,7 +1298,11 @@ function updateDimNote(){
 }
 function renderPreview(){
   setRenderCtx(ui.side);
+  hideFmtBar();
+  // The all-faces tab is a read-only overview; everywhere else the preview is click-to-edit.
+  EDIT = (ui.tab!=='all');
   stageEl.innerHTML=`<div id="ptarget">${renderTarget(ui.side, ui.target)}</div>`;
+  EDIT = false;
   fitPreview();
 }
 function fitPreview(){
@@ -1218,6 +1316,159 @@ function fitPreview(){
   el.style.zoom=z;
 }
 function renderAll(){ renderEditor(); renderTargetSelect(); renderPreview(); }
+
+/* ============================ click-to-edit on the preview ============================
+   Contract: while a node is focused it holds RAW text (markers visible, newlines as real
+   \n characters — CSS white-space:pre-wrap draws them). On blur it is repainted through
+   fmt()/esc(). The preview is deliberately NOT re-rendered on keystrokes: rebuilding
+   #ptarget would throw away the caret mid-word. */
+let activeEd=null;
+const fmtBar=document.getElementById('fmtbar');
+
+// Mirror an inline edit back into the matching left-hand panel field, so the two views agree.
+function syncPanel(key,val){
+  let sel;
+  if(key.startsWith('blk:')){ const q=key.split(':'); sel=`[data-secid="${q[1]}"][data-secfield="${q[2]}"]`; }
+  else sel=`[data-path="${key}"]`;
+  const el=editorEl.querySelector(sel);
+  if(el && el.value!==val){ el.value=val; if(el.tagName==='TEXTAREA') autoGrow(el); }
+}
+function toRaw(el){
+  if(el.dataset.rawmode) return;            // already showing raw text
+  el.dataset.rawmode='1';
+  el.textContent=edRead(el.dataset.ed);     // collapses to a single text node — keeps offsets simple
+}
+function toPainted(el){
+  delete el.dataset.rawmode;
+  edPaint(el);
+}
+// Swap to raw on pointerdown, i.e. BEFORE the browser places the caret, so the click lands
+// on the correct character of the raw text rather than of the formatted HTML.
+stageEl.addEventListener('pointerdown', e=>{
+  const el=e.target.closest && e.target.closest('.ed');
+  if(el) toRaw(el);
+});
+stageEl.addEventListener('focusin', e=>{
+  const el=e.target.closest && e.target.closest('.ed');
+  if(!el) return;
+  toRaw(el);                                 // covers keyboard (Tab) focus, where no pointerdown fires
+  activeEd=el;
+  el.dataset.wasempty = edRead(el.dataset.ed).trim() ? '0' : '1';
+});
+stageEl.addEventListener('focusout', e=>{
+  const el=e.target.closest && e.target.closest('.ed');
+  if(!el) return;
+  if(activeEd===el) activeEd=null;
+  hideFmtBar();
+  const wasEmpty=el.dataset.wasempty==='1';
+  toPainted(el);
+  // Structural fields (a scout name, a text-block heading) change the surrounding markup when
+  // they flip between empty and filled — that needs a real re-render, but only once focus has
+  // actually settled somewhere outside the preview, or we'd yank the node the user just clicked.
+  if(el.dataset.struct){
+    const isEmpty=!edRead(el.dataset.ed).trim();
+    if(isEmpty!==wasEmpty){
+      setTimeout(()=>{ if(!(document.activeElement&&document.activeElement.classList.contains('ed'))) renderPreview(); },0);
+    }
+  }
+});
+stageEl.addEventListener('input', e=>{
+  const el=e.target.closest && e.target.closest('.ed');
+  if(!el) return;
+  const key=el.dataset.ed;
+  edWrite(key, el.textContent);
+  persist();
+  syncPanel(key, el.textContent);
+  updateFmtBar();
+});
+// Enter must insert a literal newline into the text node. The browser's default (a <br> or a
+// nested <div>) would be invisible to el.textContent, so the line break would be lost on save.
+stageEl.addEventListener('keydown', e=>{
+  const el=e.target.closest && e.target.closest('.ed');
+  if(!el) return;
+  if(e.key==='Escape'){ el.blur(); return; }
+  if(e.key==='Enter'){ e.preventDefault(); document.execCommand('insertText',false,'\n'); }
+});
+// Paste as plain text — pasting styled HTML into the preview would inject foreign markup.
+stageEl.addEventListener('paste', e=>{
+  const el=e.target.closest && e.target.closest('.ed');
+  if(!el) return;
+  e.preventDefault();
+  document.execCommand('insertText',false,(e.clipboardData||window.clipboardData).getData('text'));
+});
+
+/* ---- selection toolbar: writes the *gold* / **bold** markers for you ---- */
+function hideFmtBar(){ fmtBar.classList.remove('on'); }
+function selOffsets(el){
+  const sel=window.getSelection();
+  if(!sel.rangeCount) return null;
+  const r=sel.getRangeAt(0);
+  if(!el.contains(r.commonAncestorContainer)) return null;
+  const pre=r.cloneRange();
+  pre.selectNodeContents(el);
+  pre.setEnd(r.startContainer,r.startOffset);
+  const start=pre.toString().length;
+  return {start, end:start+r.toString().length};
+}
+function setSel(el,s,e){
+  const tn=el.firstChild;
+  if(!tn||tn.nodeType!==3) return;
+  const r=document.createRange();
+  r.setStart(tn,Math.max(0,Math.min(s,tn.length)));
+  r.setEnd(tn,Math.max(0,Math.min(e,tn.length)));
+  const sel=window.getSelection();
+  sel.removeAllRanges(); sel.addRange(r);
+}
+function updateFmtBar(){
+  const el=activeEd;
+  if(!el || el.dataset.raw){ hideFmtBar(); return; }   // raw fields don't support markers
+  const sel=window.getSelection();
+  if(!sel.rangeCount || sel.isCollapsed || !el.contains(sel.anchorNode)){ hideFmtBar(); return; }
+  const r=sel.getRangeAt(0).getBoundingClientRect();
+  if(!r.width && !r.height){ hideFmtBar(); return; }
+  fmtBar.classList.add('on');
+  const bw=fmtBar.offsetWidth, bh=fmtBar.offsetHeight;
+  let x=r.left+r.width/2-bw/2, y=r.top-bh-8;
+  if(y<6) y=r.bottom+8;                                 // flip below when there's no room above
+  fmtBar.style.left=Math.max(6,Math.min(x,innerWidth-bw-6))+'px';
+  fmtBar.style.top=y+'px';
+}
+document.addEventListener('selectionchange', ()=>{ if(activeEd) updateFmtBar(); });
+function applyMarks(mark){
+  const el=activeEd; if(!el) return;
+  const o=selOffsets(el); if(!o||o.start===o.end) return;
+  const t=el.textContent;
+  const before=t.slice(0,o.start), inner=t.slice(o.start,o.end), after=t.slice(o.end);
+  let next, ns;
+  if(mark && before.endsWith(mark) && after.startsWith(mark)){        // toggle the marker off
+    next=before.slice(0,-mark.length)+inner+after.slice(mark.length);
+    ns=o.start-mark.length;
+  } else if(mark){
+    next=before+mark+inner+mark+after;
+    ns=o.start+mark.length;
+  } else {
+    // Clear: strip markers inside the selection AND the ones hugging it — after a Bold/Gold the
+    // selection covers just the words, with the markers sitting immediately outside it.
+    const bare=inner.replace(/\*+/g,'');
+    const b2=before.replace(/\*+$/,''), a2=after.replace(/^\*+/,'');
+    next=b2+bare+a2;
+    ns=b2.length;
+    el.textContent=next;
+    edWrite(el.dataset.ed,next); persist(); syncPanel(el.dataset.ed,next);
+    setSel(el,ns,ns+bare.length); updateFmtBar();
+    return;
+  }
+  el.textContent=next;
+  edWrite(el.dataset.ed,next); persist(); syncPanel(el.dataset.ed,next);
+  setSel(el,ns,ns+inner.length);
+  updateFmtBar();
+}
+// mousedown, not click: preventDefault here keeps the selection (and focus) alive in the preview
+fmtBar.addEventListener('mousedown', e=>{
+  const b=e.target.closest('button'); if(!b) return;
+  e.preventDefault();
+  applyMarks(b.dataset.unwrap!==undefined ? '' : b.dataset.wrap);
+});
 
 // editor input binding (event delegation)
 editorEl.addEventListener('input', e=>{
@@ -1250,6 +1501,11 @@ editorEl.addEventListener('change', e=>{
   if(t.dataset.seccolor!==undefined){
     const b=(state[ui.side].layout||[]).find(x=>x.id===t.dataset.seccolor);
     if(b){ b.color=t.value||undefined; persist(); renderPreview(); }
+    return;
+  }
+  if(t.dataset.secalign!==undefined){
+    const b=(state[ui.side].layout||[]).find(x=>x.id===t.dataset.secalign);
+    if(b){ b.align=t.value||undefined; persist(); renderPreview(); }
     return;
   }
   if(t.dataset.sechdr!==undefined && t.type==='checkbox'){

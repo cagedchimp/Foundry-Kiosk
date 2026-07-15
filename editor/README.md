@@ -13,8 +13,10 @@ Archivo fonts) and the sibling `brand/` folder (wordmark + pattern) in place. Th
 
 1. Pick a face tab (**Side 1 / 2 / 3**), **All faces** (see all three at once), or
    **Shared** (footer hours, socials, address).
-2. Edit the text fields on the left. The preview updates live; edits auto-save to your
-   browser's local storage.
+2. **Click any text on the preview and type** — the sign itself is editable. Hovering
+   outlines anything you can change. The fields on the left edit the same copy and the two
+   stay in sync; the left panel is still where images, QR links, calendar events and
+   adding/reordering sections live. Edits auto-save to your browser's local storage.
 3. Choose an **Export target** (the whole 26×84″ face, a single piece, or — on the
    All-faces tab — the whole pillar as one wide sheet).
 4. (Optional) Tick **Print marks** to add a 0.125″ bleed (on full-bleed pieces like
@@ -37,6 +39,9 @@ of every Side tab lets you:
   plus pattern/mark/motif/stripes/grid/none) and a **Color** colourway (Default, or any
   brand colour — Green, Forest, Paper, Gold, Teal, Sage). Text recolours automatically for
   contrast and the background watermark follows the colour.
+- **Align its text** with the **Text** dropdown: *As designed* (the default — leaves the
+  section's original alignment alone), or force **Left / Center / Right** for everything in
+  that section. Alignment is per-section, saves with your layout, and carries into the PDF.
 
 The **header and footer are fixed brand furniture** (always present); everything between
 them is modular. Your layout — order, what's on/off, and any added sections — saves locally
@@ -89,7 +94,11 @@ the in-app image is best for proofing the pillar and for sleeved/mounted prints.
 
 ## Text formatting
 
-- `*word*` → gold emphasis  ·  `**word**` → bold  ·  line breaks split lines.
+- **Easiest way:** select some text on the preview and use the little **B / Gold / Clear**
+  toolbar that pops up — no need to learn the marker syntax below.
+- `*word*` → gold emphasis  ·  `**word**` → bold  ·  line breaks split lines. While you're
+  editing a piece of text on the preview it shows these raw markers; click away and it
+  renders. (The markers never reach the PDF.)
 - **Calendar events:** one per line as `type:text`, where `type` is `r` reserved (gold),
   `t` class (teal), `s` event (sage), `g` closed (green). e.g. `r:9a Wood hold`.
 - **Open Scout cleat:** leave a Scout's *name* blank to render that slot as an empty cleat.
