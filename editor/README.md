@@ -92,10 +92,27 @@ storage limit, the save indicator warns you — use **Export** to keep a copy. F
 edge-to-edge poster printing, prep final artwork at full resolution in a dedicated tool;
 the in-app image is best for proofing the pillar and for sleeved/mounted prints.
 
-## Text formatting
+## The text toolbar
 
-- **Easiest way:** select some text on the preview and use the little **B / Gold / Clear**
-  toolbar that pops up — no need to learn the marker syntax below.
+Click into any text on the preview and a small toolbar appears above it:
+
+- **B / Gold / Clear** — formatting. These need you to *select* some text first (they grey
+  out until you do); no need to learn the marker syntax below.
+- **A− / A+** — size that piece of text, in 5% steps (50%–200%). Handy when a headline
+  wraps and you want it on one line — shrink it until it fits. The **%** in the middle
+  shows the current size; click it to reset to 100%.
+- **◧ ◫ ◨** — align that piece of text left / centre / right. Click the active one again to
+  clear it and fall back to the section's alignment.
+
+Size and alignment are per piece of text, save with your content, and carry into the PDF.
+A field's own alignment beats its section's **Text** dropdown, so you can centre one line
+inside an otherwise left-aligned section.
+
+> Note: some copy has a **deliberate line break** in it (the Side 1 headline ships as
+> "Bring your ⏎ idea to life"). Delete the break first if you want it on one line, then use
+> **A−** if it still wraps.
+
+## Text formatting
 - `*word*` → gold emphasis  ·  `**word**` → bold  ·  line breaks split lines. While you're
   editing a piece of text on the preview it shows these raw markers; click away and it
   renders. (The markers never reach the PDF.)

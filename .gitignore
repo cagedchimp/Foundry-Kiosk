@@ -9,3 +9,6 @@ Thumbs.db
 *.tmp
 /tmp/
 scratch/
+
+# local tooling (a launch config already lives in the session .claude dir)
+.claude/

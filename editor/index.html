@@ -160,6 +160,8 @@
   .hdrgreen h3{position:relative;z-index:2;font-size:18px;line-height:.9;font-weight:900;letter-spacing:-.02em;text-transform:uppercase;color:#fff;margin:3px 0 0;}
   .hdrgreen h3 em{font-style:normal;color:var(--gold);}
   .hdrgreen .rule{position:relative;z-index:2;margin:6px auto 0;width:36px;height:2px;border-radius:1px;background:var(--gold);}
+  .hdrgreen .welcome{position:relative;z-index:2;font-size:7px;letter-spacing:.18em;text-transform:uppercase;font-weight:800;color:var(--gold);margin-bottom:6px;}
+  .hdrgreen .s1eye{margin-top:9px;}
   .hdrgreen .wmwrap{position:relative;z-index:2;display:flex;justify-content:center;}
   .hdrgreen .wmwrap svg{width:128px;height:auto;display:block;}
 
@@ -402,6 +404,16 @@
   .al-center, .al-center *{text-align:center !important;}
   .al-right,  .al-right * {text-align:right  !important;}
 
+  /* ---- per-field alignment (toolbar). Two classes = specificity (0,2,0), so it outranks the
+         section rule's `.al-center *` (0,1,0) when both are !important and a field disagrees
+         with its section. ---- */
+  .fx-left  {text-align:left   !important;}
+  .fx-center{text-align:center !important;}
+  .fx-right {text-align:right  !important;}
+  .ed.fx-left  {text-align:left   !important;}
+  .ed.fx-center{text-align:center !important;}
+  .ed.fx-right {text-align:right  !important;}
+
   /* ---- floating bold/gold toolbar ---- */
   .fmtbar{position:fixed;z-index:60;display:none;gap:2px;padding:3px;background:#12261e;border:1px solid #2f4d3f;
           border-radius:7px;box-shadow:0 6px 18px rgba(0,0,0,.45);}
@@ -411,6 +423,11 @@
   .fmtbar button:hover{background:#24443a;}
   .fmtbar button .sw{color:var(--gold);}
   .fmtbar .sep{width:1px;background:#2f4d3f;margin:2px 1px;}
+  .fmtbar button:disabled{opacity:.35;cursor:default;}
+  .fmtbar button:disabled:hover{background:transparent;}
+  .fmtbar button.on{background:var(--gold);color:#12261e;}
+  .fmtbar button.on .sw{color:#12261e;}
+  #fmtsize{min-width:44px;font-variant-numeric:tabular-nums;color:#9fd8bd;}
 </style>
 </head>
 <body>
@@ -447,13 +464,21 @@
   </section>
 </div>
 <div id="printroot"></div>
-<!-- Selection toolbar for click-to-edit text: writes the *gold* / **bold** markers so
-     nobody has to learn the marker syntax. Shown only for formatted fields. -->
+<!-- Toolbar for the text you're editing. Appears as soon as you click into any text on the
+     preview. Bold/Gold write the *gold* / **bold** markers so nobody has to learn the marker
+     syntax, and they need a selection; size and align act on the whole field. -->
 <div class="fmtbar" id="fmtbar">
-  <button type="button" data-wrap="**" title="Bold"><b>B</b></button>
-  <button type="button" data-wrap="*" title="Gold emphasis"><span class="sw">Gold</span></button>
+  <button type="button" data-wrap="**" title="Bold (select text first)"><b>B</b></button>
+  <button type="button" data-wrap="*" title="Gold emphasis (select text first)"><span class="sw">Gold</span></button>
+  <button type="button" data-unwrap title="Remove formatting (select text first)">Clear</button>
   <div class="sep"></div>
-  <button type="button" data-unwrap title="Remove formatting">Clear</button>
+  <button type="button" data-size="-1" title="Smaller — shrink until it fits on one line">A−</button>
+  <button type="button" data-sizereset id="fmtsize" title="Text size — click to reset to 100%">100%</button>
+  <button type="button" data-size="1" title="Bigger">A+</button>
+  <div class="sep"></div>
+  <button type="button" data-align="left"   title="Align left">◧</button>
+  <button type="button" data-align="center" title="Center">◫</button>
+  <button type="button" data-align="right"  title="Align right">◨</button>
 </div>
 <input type="file" id="fileinput" accept="application/json" style="display:none">
 <input type="file" id="imginput" accept="image/*" style="display:none">
@@ -651,6 +676,10 @@ function panelColor(b, nativeCw){
 
 /* ============================ default content ============================ */
 function defaults(){ return {
+  // Per-field overrides keyed by the same data-ed key the inline editor uses, e.g.
+  // fx['s1.heroTitle'] = {size:0.85, align:'center'}. Set from the toolbar that appears
+  // when you click text; applied on both the preview and the print/export render.
+  fx:{},
   global:{
     hours:"**Mon–Fri** 10a–9p · **Sat–Sun** 12–8p",
     instagram:"@weissmanfoundry",
@@ -658,6 +687,7 @@ function defaults(){ return {
     address:"9 Map Hill Drive, Wellesley MA 02482 · foundryinfo@babson.edu",
   },
   s1:{
+    welcome:"Welcome to the",
     eyebrow:"An open-door prototyping hub",
     heroLabel:"Where your ideas become reality",
     heroTitle:"Bring your\n*idea* to life",
@@ -839,13 +869,32 @@ function edWrite(key,val){
   if(key.startsWith('blk:')){ const p=key.split(':'), b=findBlk(p[1]); if(b) b[p[2]]=val; return; }
   set(key,val);
 }
+// Per-field size/align overrides. Kept out of the copy itself so they travel with the
+// layout and apply identically to the preview and the PDF.
+function fxOf(key){ return (state.fx && state.fx[key]) || null; }
+function fxBits(key){
+  const f=fxOf(key);
+  if(!f) return {cls:'',style:''};
+  const cls = f.align ? 'fx-'+f.align : '';
+  // zoom (not font-size): every component sizes text in absolute design px, so a parent
+  // font-size would not cascade. zoom scales the text within the same visual column width,
+  // which is exactly the "shrink it until it fits on one line" knob. The print path already
+  // relies on zoom (#printscale), and nested zooms multiply, so this survives export.
+  const style = (f.size && f.size!==1) ? `zoom:${f.size}` : '';
+  return {cls,style};
+}
 // Attribute string for a leaf element. cls = the element's existing class list ('' for none).
-// opts.raw   -> field is esc()-only (no *gold*/**bold**); the toolbar stays hidden.
+// NOTE: call sites must not carry their own style="" — fxBits owns the style attribute here.
+// opts.raw   -> field is esc()-only (no *gold*/**bold**); the marker buttons stay disabled.
 // opts.struct-> emptying/filling this field changes the layout, so re-render on blur.
 function E(cls,key,ph,opts){
   opts=opts||{};
-  if(!EDIT) return cls?` class="${cls}"`:'';
-  return ` class="${cls?cls+' ':''}ed" contenteditable="true" data-ed="${escAttr(key)}"`+
+  const fx=fxBits(key);
+  let cl=[cls,fx.cls].filter(Boolean).join(' ');
+  const st=fx.style?` style="${fx.style}"`:'';
+  if(!EDIT) return (cl?` class="${cl}"`:'')+st;                 // print: styling yes, editing no
+  cl=[cl,'ed'].filter(Boolean).join(' ');
+  return ` class="${cl}"${st} contenteditable="true" data-ed="${escAttr(key)}"`+
          (ph?` data-ph="${escAttr(ph)}"`:'')+
          (opts.raw?' data-raw="1"':'')+
          (opts.struct?' data-struct="1"':'');
@@ -865,7 +914,7 @@ function tileHeader(b){
 function cHeader(side){
   const prow = side==='s1'?0 : side==='s2'?2 : 4;
   const inner = side==='s1'
-    ? `<div class="wmwrap">${wm('#FFFFFF')}</div><div${E('eyebrow',p('eyebrow'),'Eyebrow')} style="margin-top:9px;">${fmt(S.eyebrow)}</div>`
+    ? `<div${E('welcome',p('welcome'),'Welcome to the')}>${fmt(S.welcome)}</div><div class="wmwrap">${wm('#FFFFFF')}</div><div${E('eyebrow s1eye',p('eyebrow'),'Eyebrow')}>${fmt(S.eyebrow)}</div>`
     : `<div${E('eyebrow',p('eyebrow'),'Eyebrow')}>${fmt(S.eyebrow)}</div><h3${E('',p('title'),'Title')}>${fmt(S.title)}</h3>`;
   return `<div class="hdrgreen">${patBand(prow)}
     <div class="band">${inner}<div class="rule"></div></div></div>`;
@@ -1220,7 +1269,7 @@ function editorHTML(tab){
       s3:'Leave a Scout’s <b>name</b> blank to render that slot as an open cleat. Sections can be moved between sides.',
     };
     const headerGrp = side==='s1'
-      ? grp('Header', F('s1.eyebrow','Eyebrow','text'))
+      ? grp('Header', F('s1.welcome','Above the logo','text') + F('s1.eyebrow','Eyebrow','text'))
       : grp('Header', F(`${side}.eyebrow`,'Eyebrow','text') + F(`${side}.title`,'Title (use *gold*)','area'));
     // content editors follow the live layout, so a moved section's controls appear on its new side
     const sectionEditors = (state[side].layout||[]).filter(b=>EDITORS[b.type]).map(b=>EDITORS[b.type](side)).join('');
@@ -1354,6 +1403,7 @@ stageEl.addEventListener('focusin', e=>{
   toRaw(el);                                 // covers keyboard (Tab) focus, where no pointerdown fires
   activeEd=el;
   el.dataset.wasempty = edRead(el.dataset.ed).trim() ? '0' : '1';
+  updateFmtBar();                            // show size/align the moment you click into text
 });
 stageEl.addEventListener('focusout', e=>{
   const el=e.target.closest && e.target.closest('.ed');
@@ -1419,19 +1469,66 @@ function setSel(el,s,e){
   const sel=window.getSelection();
   sel.removeAllRanges(); sel.addRange(r);
 }
+// The bar shows for ANY focused field — that's what makes size/align discoverable. The marker
+// buttons need a selection to act on, so they disable themselves until there is one.
 function updateFmtBar(){
   const el=activeEd;
-  if(!el || el.dataset.raw){ hideFmtBar(); return; }   // raw fields don't support markers
+  if(!el){ hideFmtBar(); return; }
   const sel=window.getSelection();
-  if(!sel.rangeCount || sel.isCollapsed || !el.contains(sel.anchorNode)){ hideFmtBar(); return; }
-  const r=sel.getRangeAt(0).getBoundingClientRect();
-  if(!r.width && !r.height){ hideFmtBar(); return; }
+  const hasSel = sel.rangeCount && !sel.isCollapsed && el.contains(sel.anchorNode);
+  const f=fxOf(el.dataset.ed)||{};
+
+  fmtBar.querySelectorAll('[data-wrap],[data-unwrap]').forEach(b=>{
+    b.disabled = !hasSel || !!el.dataset.raw;           // raw fields have no marker syntax
+  });
+  fmtBar.querySelectorAll('[data-align]').forEach(b=>{
+    b.classList.toggle('on', f.align===b.dataset.align);
+  });
+  document.getElementById('fmtsize').textContent = Math.round((f.size||1)*100)+'%';
+
   fmtBar.classList.add('on');
+  // anchor to the selection when there is one, otherwise to the field itself
+  const r = hasSel ? sel.getRangeAt(0).getBoundingClientRect() : el.getBoundingClientRect();
   const bw=fmtBar.offsetWidth, bh=fmtBar.offsetHeight;
   let x=r.left+r.width/2-bw/2, y=r.top-bh-8;
   if(y<6) y=r.bottom+8;                                 // flip below when there's no room above
   fmtBar.style.left=Math.max(6,Math.min(x,innerWidth-bw-6))+'px';
   fmtBar.style.top=y+'px';
+}
+/* ---- per-field size / align ---------------------------------------------------------
+   Applied straight to the live element as well as to state: re-rendering the preview would
+   destroy the caret, and the user is mid-edit when they reach for these. */
+const FS_MIN=0.5, FS_MAX=2.0, FS_STEP=0.05;
+function setFx(key, patch){
+  if(!state.fx) state.fx={};
+  const f=Object.assign({}, state.fx[key]||{}, patch);
+  if(!f.align) delete f.align;
+  if(!f.size || f.size===1) delete f.size;
+  if(Object.keys(f).length) state.fx[key]=f; else delete state.fx[key];
+  persist();
+  return state.fx[key]||{};
+}
+function applyFxTo(el){
+  const f=fxOf(el.dataset.ed)||{};
+  el.classList.remove('fx-left','fx-center','fx-right');
+  if(f.align) el.classList.add('fx-'+f.align);
+  el.style.zoom = (f.size && f.size!==1) ? f.size : '';
+}
+function nudgeSize(dir){
+  const el=activeEd; if(!el) return;
+  const cur=(fxOf(el.dataset.ed)||{}).size || 1;
+  const next=Math.round(Math.min(FS_MAX,Math.max(FS_MIN,cur+dir*FS_STEP))*100)/100;
+  setFx(el.dataset.ed,{size:next}); applyFxTo(el); updateFmtBar();
+}
+function resetSize(){
+  const el=activeEd; if(!el) return;
+  setFx(el.dataset.ed,{size:1}); applyFxTo(el); updateFmtBar();
+}
+function setAlign(a){
+  const el=activeEd; if(!el) return;
+  const cur=(fxOf(el.dataset.ed)||{}).align;
+  setFx(el.dataset.ed,{align: cur===a ? null : a});     // clicking the active one clears it
+  applyFxTo(el); updateFmtBar();
 }
 document.addEventListener('selectionchange', ()=>{ if(activeEd) updateFmtBar(); });
 function applyMarks(mark){
@@ -1465,9 +1562,12 @@ function applyMarks(mark){
 }
 // mousedown, not click: preventDefault here keeps the selection (and focus) alive in the preview
 fmtBar.addEventListener('mousedown', e=>{
-  const b=e.target.closest('button'); if(!b) return;
+  const b=e.target.closest('button'); if(!b || b.disabled) return;
   e.preventDefault();
-  applyMarks(b.dataset.unwrap!==undefined ? '' : b.dataset.wrap);
+  if(b.dataset.align!==undefined)      setAlign(b.dataset.align);
+  else if(b.dataset.size!==undefined)  nudgeSize(+b.dataset.size);
+  else if(b.dataset.sizereset!==undefined) resetSize();
+  else applyMarks(b.dataset.unwrap!==undefined ? '' : b.dataset.wrap);
 });
 
 // editor input binding (event delegation)
