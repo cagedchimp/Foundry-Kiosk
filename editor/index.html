@@ -147,11 +147,16 @@
   .toprow{display:flex;}
   .toprow .tt{width:9px;height:9px;flex:0 0 auto;overflow:hidden;}
   .toprow .tt svg{display:block;width:100%;height:100%;}
-  /* real brand pattern band (crops of brand/Foundry_Pattern.jpg, 8x6 grid of square tiles).
-     Scaled so one tile row = the 9px band height; --prow (0..5) picks which row shows. */
+  /* Real brand pattern band: brand/Foundry_Pattern.jpg, an 8x6 grid of square ~158.67px
+     tiles = 1269x952. The file used to ship 1288px wide, with a 19px near-white export
+     margin down its right edge; repeat-x tiled that margin into a white line every ~73px,
+     which is what showed up in this band and in the footer. The margin is now cropped off.
+     Size is pinned to 72x54 (8 cols x 9px, 6 rows x 9px) rather than `auto 54px`, which
+     resolves to 71.98px — that fraction put every seam on a sub-pixel boundary and rounded
+     into a hairline, worst under the print zoom (11.46x). --prow (0..5) picks a row. */
   .patband{height:9px;width:100%;overflow:hidden;background:var(--forest);
     background-image:url('../brand/Foundry_Pattern.jpg');
-    background-size:auto 54px; background-repeat:repeat-x;
+    background-size:72px 54px; background-repeat:repeat-x;
     background-position-x:0; background-position-y:calc(var(--prow,0) * -9px);}
   .hdrgreen{background:var(--green);border-radius:6px;overflow:hidden;position:relative;}
   .hdrgreen .band{padding:9px 10px 10px;text-align:center;position:relative;}
