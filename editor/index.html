@@ -950,8 +950,10 @@ function cHeroS1(b){
 }
 function cMore(b){
   const T=panelColor(b,'paper');
-  // the <p> mixes two fields, so each gets its own editable span rather than the paragraph
-  return `<div class="more ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}<p><span${E('',p('moreBody'),'Body copy')}>${fmt(S.moreBody)}</span> <span${E('free',p('moreBadge'),'Badge')}>${fmt(S.moreBadge)}</span></p></div>`;
+  // the <p> mixes two fields, so each gets its own editable span rather than the paragraph.
+  // the gold badge is optional per-block: hidden when the section's Badge toggle is off.
+  const badge = (b&&b.badge===false) ? '' : ` <span${E('free',p('moreBadge'),'Badge')}>${fmt(S.moreBadge)}</span>`;
+  return `<div class="more ${T.cls} ${panelBgClass(b,T.tint,T.pc)}">${tileHeader(b)}<p><span${E('',p('moreBody'),'Body copy')}>${fmt(S.moreBody)}</span>${badge}</p></div>`;
 }
 function cCaps(b){
   const cells=S.caps.map((l,i)=>{
@@ -1065,7 +1067,7 @@ function cCustomQr(b){
 // Each modular section type: how to render it and how to wrap it in the stack.
 const BLOCKS={
   heroS1:    {label:'Hero',             wrap:'mount',   bg:true, hasHeader:true, editHeaderText:true, render:b=>cHeroS1(b)},
-  more:      {label:'“What it is”',     wrap:'mount',   bg:true, hasHeader:true, editHeaderText:true, render:b=>cMore(b)},
+  more:      {label:'“What it is”',     wrap:'mount',   bg:true, hasHeader:true, editHeaderText:true, hasBadge:true, render:b=>cMore(b)},
   caps:      {label:'Capabilities',     wrap:'mount',   bg:true, hasHeader:true, render:b=>cCaps(b)},
   flow:      {label:'Concept → product',wrap:'mount',   bg:true, hasHeader:true, render:b=>cFlow(b)},
   qr:        {label:'Get-started QR',   wrap:'mount',   bg:true, hasHeader:true, editHeaderText:true, render:b=>cQr(b)},
@@ -1247,6 +1249,7 @@ function secManager(side){
       `<input type="checkbox" data-sectog="${b.id}" ${b.on?'checked':''} title="Show / hide">`+
       `<span class="secname">${def.label}${def.addable?' <em>(added)</em>':''}</span>`+
       (def.hasHeader?`<label class="hdrtog" title="Show this section's header label"><input type="checkbox" data-sechdr="${b.id}" ${b.header===false?'':'checked'}>Hdr</label>`:'')+
+      (def.hasBadge?`<label class="hdrtog" title="Show the gold badge"><input type="checkbox" data-secbadge="${b.id}" ${b.badge===false?'':'checked'}>Badge</label>`:'')+
       (def.addable?`<button type="button" class="secdel" data-secdel="${b.id}" title="Remove section">✕</button>`:'')+
       `</div>${secBody(b)}${def.editHeaderText?headerTextField(b):''}${secOpts(b,def)}${secMoveRow(b,side)}</div>`;
   }).join('');
@@ -1652,6 +1655,11 @@ editorEl.addEventListener('change', e=>{
   if(t.dataset.sechdr!==undefined && t.type==='checkbox'){
     const b=(state[ui.side].layout||[]).find(x=>x.id===t.dataset.sechdr);
     if(b){ b.header=t.checked; persist(); renderPreview(); }
+    return;
+  }
+  if(t.dataset.secbadge!==undefined && t.type==='checkbox'){
+    const b=(state[ui.side].layout||[]).find(x=>x.id===t.dataset.secbadge);
+    if(b){ b.badge=t.checked; persist(); renderPreview(); }
     return;
   }
   if(t.dataset.secmove!==undefined){
